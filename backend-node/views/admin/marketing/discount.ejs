@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Discounts — VitaStore Admin</title>
+  <link rel="stylesheet" href="/static/admin/css/style.css?v=1" />
+</head>
+<body>
+  <div class="admin-layout">
+    <%- include('../fragments/sidebar') %>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-info">
+          <div class="topbar-title">Discounts</div>
+          <div class="topbar-breadcrumb">Quản lý mã giảm giá</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleLogoutDropdown()">⚙️</button>
+          <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+            <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Quản lý Discounts</div>
+            <div class="page-subtitle">Mã giảm giá và khuyến mãi</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:40px;text-align:center;color:var(--text-muted)">
+            Tính năng đang phát triển. Discount codes được quản lý trực tiếp trên database.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/admin/js/admin.js"></script>
+  <script>setActiveNav('discounts');</script>
+</body>
+</html>

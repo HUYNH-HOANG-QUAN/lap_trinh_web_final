@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Order Detail — VitaStore Admin</title>
+  <link rel="stylesheet" href="/static/admin/css/style.css?v=1" />
+</head>
+<body>
+  <div class="admin-layout">
+    <%- include('../fragments/sidebar') %>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-info">
+          <div class="topbar-title">Order Detail</div>
+          <div class="topbar-breadcrumb">Chi tiết đơn hàng</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleLogoutDropdown()">⚙️</button>
+          <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+            <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="orderCodeTitle">Chi tiết đơn hàng</div>
+          </div>
+          <a href="/admin/order/list" class="btn btn-outline">← Quay lại danh sách</a>
+        </div>
+        <div id="orderDetail" style="padding:20px;color:var(--text-muted)">Đang tải...</div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/admin/js/admin.js"></script>
+  <script>
+    const orderId = new URLSearchParams(window.location.search).get('id');
+
+    async function loadDetail() {
+      if (!orderId) { document.getElementById('orderDetail').innerHTML = '<p>Không tìm thấy order ID.</p>'; return; }
+      try {
+        const o = await API.getOrderById(orderId);
+        document.getElementById('orderCodeTitle').textContent = `Đơn hàng: ${o.orderCode}`;
+        const rows = (o.items || []).map(item => `
+          <tr>
+            <td>${item.productName}</td>
+            <td>${item.productSku}</td>
+            <td>${item.quantity}</td>
+            <td>${Utils.formatCurrency(item.unitPrice)}</td>
+            <td>${Utils.formatCurrency(item.lineTotal)}</td>
+          </tr>`).join('');
+        document.getElementById('orderDetail').innerHTML = `
+          <div class="grid-2" style="margin-bottom:20px">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Thông tin giao hàng</div></div>
+              <div style="padding:16px">
+                <p><strong>Người nhận:</strong> ${o.recipientName}</p>
+                <p><strong>Điện thoại:</strong> ${o.recipientPhone}</p>
+                <p><strong>Địa chỉ:</strong> ${o.shippingAddressLine1}, ${o.shippingCity}, ${o.shippingProvince}</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Thông tin thanh toán</div></div>
+              <div style="padding:16px">
+                <p><strong>Trạng thái đơn:</strong> ${Utils.statusBadge(o.status)}</p>
+                <p><strong>Thanh toán:</strong> ${Utils.paymentBadge(o.paymentStatus)}</p>
+                <p><strong>Khách hàng:</strong> ${o.userName || 'Khách vãng lai'}</p>
+                <p><strong>Ngày đặt:</strong> ${new Date(o.placedAt).toLocaleDateString('vi-VN')}</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Chi tiết đơn hàng</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Sản phẩm</th><th>SKU</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+            <div style="padding:16px;text-align:right;font-size:18px;font-weight:bold;color:var(--primary)">
+              Tổng cộng: ${Utils.formatCurrency(o.totalAmount)}
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><div class="card-title">Cập nhật trạng thái</div></div>
+            <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-outline" onclick="updateStatus('PENDING')">⏳ Chờ xử lý</button>
+              <button class="btn btn-sm btn-outline" onclick="updateStatus('CONFIRMED')">✓ Xác nhận</button>
+              <button class="btn btn-sm btn-outline" onclick="updateStatus('SHIPPED')">🚚 Đang giao</button>
+              <button class="btn btn-sm btn-outline" onclick="updateStatus('COMPLETED')">✓ Hoàn thành</button>
+              <button class="btn btn-sm btn-danger" onclick="updateStatus('CANCELLED')">✗ Hủy</button>
+            </div>
+          </div>`;
+      } catch(e) {
+        document.getElementById('orderDetail').innerHTML = `<p style="color:red">Lỗi: ${e.message}</p>`;
+      }
+    }
+
+    async function updateStatus(status) {
+      try {
+        await API.updateOrderStatus(parseInt(orderId), status);
+        Utils.toast('Đã cập nhật trạng thái!');
+        await loadDetail();
+      } catch(e) { Utils.toast(e.message, 'error'); }
+    }
+
+    setActiveNav('orders');
+    document.addEventListener('DOMContentLoaded', loadDetail);
+  </script>
+</body>
+</html>

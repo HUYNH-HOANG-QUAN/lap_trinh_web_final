@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Add/Edit Product — VitaStore Admin</title>
+  <link rel="stylesheet" href="/static/admin/css/style.css?v=1" />
+</head>
+<body>
+  <div class="admin-layout">
+    <%- include('../fragments/sidebar') %>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-info">
+          <div class="topbar-title" id="pageTitle">Add Product</div>
+          <div class="topbar-breadcrumb">Quản lý sản phẩm</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleLogoutDropdown()">⚙️</button>
+          <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+            <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="pageHeaderTitle">Thêm sản phẩm mới</div>
+            <div class="page-subtitle">Điền thông tin sản phẩm</div>
+          </div>
+          <a href="/admin/product/list" class="btn btn-outline">← Quay lại</a>
+        </div>
+
+        <div class="card" style="max-width:800px">
+          <div class="modal-body">
+            <input type="hidden" id="pId" />
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">SKU *</label><input class="form-control" id="pSku" required /></div>
+              <div class="form-group"><label class="form-label">Slug *</label><input class="form-control" id="pSlug" required /></div>
+            </div>
+            <div class="form-group"><label class="form-label">Tên sản phẩm *</label><input class="form-control" id="pName" required /></div>
+            <div class="form-group"><label class="form-label">Mô tả ngắn</label><input class="form-control" id="pShortDesc" /></div>
+            <div class="form-group"><label class="form-label">Mô tả chi tiết</label><textarea class="form-control" id="pDesc" rows="4"></textarea></div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Giá (VNĐ) *</label><input class="form-control" id="pPrice" type="number" required /></div>
+              <div class="form-group"><label class="form-label">Giá cũ (VNĐ)</label><input class="form-control" id="pOldPrice" type="number" /></div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Số lượng tồn kho</label><input class="form-control" id="pStock" type="number" value="0" /></div>
+              <div class="form-group"><label class="form-label">Danh mục</label>
+                <select class="form-control" id="pCategory"><option value="">— Chọn danh mục —</option></select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Trạng thái</label>
+              <select class="form-control" id="pActive"><option value="true">● Active</option><option value="false">● Inactive</option></select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline" onclick="window.location.href='/admin/product/list'">Hủy</button>
+            <button class="btn btn-primary" id="pSaveBtn" onclick="saveProduct()">💾 Lưu sản phẩm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin/js/admin.js"></script>
+  <script>
+    const editId = new URLSearchParams(window.location.search).get('edit');
+
+    async function init() {
+      const cats = await API.getCategories();
+      const sel = document.getElementById('pCategory');
+      cats.forEach(c => { const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name; sel.appendChild(opt); });
+
+      if (editId) {
+        document.getElementById('pageTitle').textContent = 'Edit Product';
+        document.getElementById('pageHeaderTitle').textContent = 'Chỉnh sửa sản phẩm';
+        document.getElementById('pSaveBtn').textContent = '💾 Cập nhật';
+        const products = await API.getProducts();
+        const p = products.find(x => x.id == editId);
+        if (p) {
+          document.getElementById('pId').value = p.id;
+          document.getElementById('pSku').value = p.sku;
+          document.getElementById('pSlug').value = p.slug;
+          document.getElementById('pName').value = p.name;
+          document.getElementById('pShortDesc').value = p.shortDescription || '';
+          document.getElementById('pDesc').value = p.description || '';
+          document.getElementById('pPrice').value = p.price;
+          document.getElementById('pOldPrice').value = p.oldPrice || '';
+          document.getElementById('pStock').value = p.stockQuantity;
+          document.getElementById('pCategory').value = p.categoryId || '';
+          document.getElementById('pActive').value = String(p.isActive);
+        }
+      }
+    }
+
+    async function saveProduct() {
+      const sku = document.getElementById('pSku').value.trim();
+      const slug = document.getElementById('pSlug').value.trim();
+      const name = document.getElementById('pName').value.trim();
+      if (!sku || !slug || !name) { Utils.toast('Vui lòng nhập SKU, Slug và Tên!', 'error'); return; }
+      const btn = document.getElementById('pSaveBtn'); btn.disabled = true; btn.textContent = '⏳...';
+      const data = {
+        sku, slug, name,
+        shortDescription: document.getElementById('pShortDesc').value.trim(),
+        description: document.getElementById('pDesc').value.trim(),
+        price: parseFloat(document.getElementById('pPrice').value),
+        oldPrice: document.getElementById('pOldPrice').value ? parseFloat(document.getElementById('pOldPrice').value) : null,
+        stockQuantity: parseInt(document.getElementById('pStock').value) || 0,
+        categoryId: document.getElementById('pCategory').value ? parseInt(document.getElementById('pCategory').value) : null,
+        isActive: document.getElementById('pActive').value === 'true',
+      };
+      try {
+        if (editId) { await API.updateProduct(parseInt(editId), data); Utils.toast('Đã cập nhật sản phẩm!'); }
+        else { await API.createProduct(data); Utils.toast('Đã thêm sản phẩm mới!'); }
+        setTimeout(() => { window.location.href = '/admin/product/list'; }, 800);
+      } catch(e) { Utils.toast(e.message || 'Có lỗi', 'error'); btn.disabled = false; btn.textContent = '💾 Lưu sản phẩm'; }
+    }
+
+    setActiveNav('products');
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
