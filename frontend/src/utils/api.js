@@ -51,6 +51,45 @@ export const apiRegister = async (fullName, email, phone, password, confirmPassw
   return response.json();
 };
 
+export const apiVerifyRegister = async (email, otp) => {
+  const response = await fetch(`${API_BASE}/auth/verify-register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Xác minh thất bại");
+  }
+  return data;
+};
+
+export const apiCompleteRegister = async (fullName, email, phone, password, otp) => {
+  const response = await fetch(`${API_BASE}/auth/complete-register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName, email, phone, password, otp }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Đăng ký thất bại");
+  }
+  return data;
+};
+
+export const apiResendOtp = async (email) => {
+  const response = await fetch(`${API_BASE}/auth/resend-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Gửi lại mã thất bại");
+  }
+  return data;
+};
+
 // =====================================================
 // ORDER API
 // =====================================================
@@ -312,6 +351,19 @@ export const apiForgotPassword = async (email) => {
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.message || "Gửi yêu cầu thất bại");
+  }
+  return data;
+};
+
+export const apiVerifyForgotPassword = async (email, otp, newPassword) => {
+  const response = await fetch(`${API_BASE}/auth/verify-forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp, newPassword }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Xác minh thất bại");
   }
   return data;
 };

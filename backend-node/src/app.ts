@@ -37,8 +37,12 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // ============================================
 app.post("/api/auth/login", authRoutes.login);
 app.post("/api/auth/register", authRoutes.register);
+app.post("/api/auth/verify-register", authRoutes.verifyRegister);
+app.post("/api/auth/complete-register", authRoutes.completeRegister);
 app.post("/api/auth/logout", authRoutes.logout);
 app.post("/api/auth/forgot-password", authRoutes.forgotPassword);
+app.post("/api/auth/verify-forgot-password", authRoutes.verifyForgotPassword);
+app.post("/api/auth/resend-otp", authRoutes.resendOtp);
 app.post("/api/auth/reset-password", authRoutes.resetPassword);
 
 // ============================================
@@ -122,6 +126,13 @@ app.put("/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updat
 
 app.get("/admin/dashboard/stats", authenticate, requireAdmin, dashboardRoutes.getDashboardStats);
 
+// Admin account management
+app.get("/admin/account/all", authenticate, requireAdmin, adminRoutes.getAllAdminAccounts);
+app.post("/admin/account/add", authenticate, requireAdmin, adminRoutes.createAdminAccount);
+app.put("/admin/account/:id", authenticate, requireAdmin, adminRoutes.updateAdminAccount);
+app.delete("/admin/account/:id", authenticate, requireAdmin, adminRoutes.deleteAdminAccount);
+app.put("/admin/account/:id/password", authenticate, requireAdmin, adminRoutes.changeAdminPassword);
+
 // ============================================
 // Admin view routes (EJS templates)
 // ============================================
@@ -157,6 +168,9 @@ app.get("/admin/marketing/discount", authenticate, requireAdmin, (req: any, res)
 });
 app.get("/admin/reviews/review", authenticate, requireAdmin, (req: any, res) => {
   res.render("reviews/review", { user: req.user });
+});
+app.get("/admin/account/list", authenticate, requireAdmin, (req: any, res) => {
+  res.render("accounts/list", { user: req.user });
 });
 
 // Error handlers

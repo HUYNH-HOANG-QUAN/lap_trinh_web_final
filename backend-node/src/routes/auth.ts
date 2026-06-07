@@ -5,6 +5,7 @@ import { AppDataSource } from "../config/database";
 import { User, Role, UserStatus } from "../entity/User";
 import { AuthRequest } from "../middleware/auth";
 import { config } from "../config/env";
+import { sendOtp, verifyOtp } from "../service/otpService";
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { username, password, rememberMe } = req.body;
@@ -104,12 +105,82 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const result = await sendOtp(email.trim(), "register");
+  if (!result.success) {
+    res.status(429).json({ message: result.message });
+    return;
+  }
+
+  res.json({ message: result.message, email: email.trim(), requireOtp: true });
+}
+
+export async function verifyRegister(req: Request, res: Response): Promise<void> {
+  const { email, otp } = req.body;
+
+  if (!email?.trim() || !otp?.trim()) {
+    res.status(400).json({ message: "Email va ma OTP la bat buoc." });
+    return;
+  }
+
+  const result = await verifyOtp(email.trim(), otp.trim());
+  if (!result.success) {
+    res.status(400).json({ message: result.message });
+    return;
+  }
+
+  const userRepo = AppDataSource.getRepository(User);
+  const existing = await userRepo
+    .createQueryBuilder("user")
+    .where("user.email = :email", { email: email.trim() })
+    .andWhere("user.deletedAt IS NULL")
+    .getOne();
+
+  if (existing) {
+    res.status(400).json({ message: "Email da ton tai." });
+    return;
+  }
+
+  res.json({ message: "Xac minh thanh cong. Vui long dang ky." });
+}
+
+export async function completeRegister(req: Request, res: Response): Promise<void> {
+  const { fullName, email, phone, password, otp } = req.body;
+
+  if (!fullName?.trim() || !email?.trim() || !password?.trim() || !otp?.trim()) {
+    res.status(400).json({ message: "Thong tin khong day du." });
+    return;
+  }
+  if (password.length < 6) {
+    res.status(400).json({ message: "Mat khau phai it nhat 6 ky tu." });
+    return;
+  }
+
+  const verifyResult = await verifyOtp(email.trim(), otp.trim());
+  if (!verifyResult.success) {
+    res.status(400).json({ message: verifyResult.message });
+    return;
+  }
+
+  const userRepo = AppDataSource.getRepository(User);
+
+  const existing = await userRepo
+    .createQueryBuilder("user")
+    .where("user.email = :email OR user.phone = :phone", { email: email.trim(), phone: phone?.trim() })
+    .andWhere("user.deletedAt IS NULL")
+    .getOne();
+
+  if (existing) {
+    res.status(400).json({ message: "Email hoac so dien thoai da ton tai." });
+    return;
+  }
+
   const user = new User();
   user.fullName = fullName.trim();
   user.email = email.trim();
   user.phone = phone?.trim() || undefined;
   user.role = Role.CUSTOMER;
   user.status = UserStatus.ACTIVE;
+  user.emailVerifiedAt = new Date();
   user.passwordHash = await bcryptjs.hash(password, 10);
 
   await userRepo.save(user);
@@ -136,22 +207,75 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   }
 
   const userRepo = AppDataSource.getRepository(User);
-  const user = await userRepo.findOne({ where: { email: email.trim() } });
+  const user = await userRepo.findOne({ where: { email: email.trim() } as any });
 
   if (!user) {
-    res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau.", demo: true });
+    res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc ma xac minh.", demo: true });
     return;
   }
 
-  const { v4: uuidv4 } = await import("uuid");
-  user.resetToken = uuidv4();
-  user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+  const result = await sendOtp(email.trim(), "reset_password", user.id);
+  if (!result.success) {
+    res.status(429).json({ message: result.message });
+    return;
+  }
+
+  res.json({ message: result.message, email: email.trim(), requireOtp: true });
+}
+
+export async function verifyForgotPassword(req: Request, res: Response): Promise<void> {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email?.trim() || !otp?.trim() || !newPassword) {
+    res.status(400).json({ message: "Thong tin khong day du." });
+    return;
+  }
+  if (newPassword.length < 6) {
+    res.status(400).json({ message: "Mat khau phai it nhat 6 ky tu." });
+    return;
+  }
+
+  const verifyResult = await verifyOtp(email.trim(), otp.trim());
+  if (!verifyResult.success) {
+    res.status(400).json({ message: verifyResult.message });
+    return;
+  }
+
+  const userRepo = AppDataSource.getRepository(User);
+  const user = await userRepo.findOne({ where: { email: email.trim() } as any });
+
+  if (!user) {
+    res.status(400).json({ message: "Tai khoan khong ton tai." });
+    return;
+  }
+
+  user.passwordHash = await bcryptjs.hash(newPassword, 10);
   await userRepo.save(user);
 
-  const resetLink = `${config.frontendBaseUrl}/reset-password?token=${user.resetToken}`;
-  console.log(`[Auth] Reset link for ${email}: ${resetLink}`);
+  res.json({ message: "Dat lai mat khau thanh cong!" });
+}
 
-  res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau.", demo: true, resetLink });
+export async function resendOtp(req: Request, res: Response): Promise<void> {
+  const { email } = req.body;
+
+  if (!email?.trim()) {
+    res.status(400).json({ message: "Email khong duoc trong." });
+    return;
+  }
+
+  const userRepo = AppDataSource.getRepository(User);
+  const user = await userRepo.findOne({ where: { email: email.trim() } as any });
+
+  const action = user ? "reset_password" : "register";
+  const userId = user?.id;
+
+  const result = await sendOtp(email.trim(), action, userId);
+  if (!result.success) {
+    res.status(429).json({ message: result.message });
+    return;
+  }
+
+  res.json({ message: result.message });
 }
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
