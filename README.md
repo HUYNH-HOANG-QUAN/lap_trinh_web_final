@@ -23,8 +23,21 @@ ProFit/
 
 ---
 ####################################
-## 5. Chạy Đồng Thời Backend và Frontend
+## Hướng dẫn chạy chạy code
+tạo bản copy .env.example và đổi thành .env
+thêm tài khoản gmail+pass nữa test OTP (khi thực hiện chức năng quên mật khẩu)
+Để lấy App Password:
 
+Vào tài khoản Google của bạn:
+Google Account Security: 
+Bật Xác minh 2 bước (2-Step Verification) nếu chưa bật.
+Sau khi bật, vào:
+Google App Passwords
+Chọn ứng dụng (hoặc nhập tên như "ProFitSupps").
+Google sẽ hiện một mã 16 ký tự, ví dụ: dhxpgnwnsjfraruz
+copy mã + gmail dán vào 2 biến (SMTP_USER VÀ SMTP_PASS) trong .env:
+SMTP_USER= tài khoản gmail
+SMTP_PASS= mật khẩu 16 số
 Mở **2 terminal** riêng biệt:
 
 **Terminal 1 - Backend:**
