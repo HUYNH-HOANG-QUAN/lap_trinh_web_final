@@ -40,7 +40,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   const expirationMs = rememberMe ? config.jwt.rememberExpirationMs : config.jwt.expirationMs;
   const token = jwt.sign(
-    { email: user.email, role: `ROLE_${user.role}` },
+    { email: user.email, role: user.role },
     config.jwt.secret,
     { expiresIn: Math.floor(expirationMs / 1000) }
   );

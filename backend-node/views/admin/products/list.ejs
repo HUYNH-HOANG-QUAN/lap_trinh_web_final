@@ -52,9 +52,23 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>ID</th><th>Category</th><th>Name</th><th>Price</th><th>Rating</th><th>Stock</th><th>Actions</th></tr></thead>
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="id" onclick="sortBy('id')">ID <span class="sort-icon" id="sort-icon-id"></span></th>
+                  <th class="sortable" data-sort="categoryId" onclick="sortBy('categoryId')">Category <span class="sort-icon" id="sort-icon-categoryId"></span></th>
+                  <th class="sortable" data-sort="name" onclick="sortBy('name')">Name <span class="sort-icon" id="sort-icon-name"></span></th>
+                  <th class="sortable" data-sort="price" onclick="sortBy('price')">Price <span class="sort-icon" id="sort-icon-price"></span></th>
+                  <th class="sortable" data-sort="ratingAvg" onclick="sortBy('ratingAvg')">Rating <span class="sort-icon" id="sort-icon-ratingAvg"></span></th>
+                  <th class="sortable" data-sort="stockQuantity" onclick="sortBy('stockQuantity')">Stock <span class="sort-icon" id="sort-icon-stockQuantity"></span></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
               <tbody id="productsBody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr></tbody>
             </table>
+          </div>
+          <div class="pagination-wrap" id="paginationWrap" style="display:none">
+            <div class="pagination-info" id="paginationInfo"></div>
+            <div class="pagination" id="paginationBtns"></div>
           </div>
         </div>
       </div>
@@ -78,17 +92,45 @@
 
   <script src="/static/admin/js/admin.js"></script>
   <script>
-    let allProducts = [];
+    let currentPage = 1;
+    const pageLimit = 20;
+    let currentSort = { sortBy: 'createdAt', sortDir: 'DESC' };
 
     async function loadProducts() {
       try {
-        const [products, cats] = await Promise.all([API.getProducts(), API.getCategories()]);
-        allProducts = products;
+        const search = document.getElementById("searchInput").value.trim();
+        const cat = document.getElementById("catFilter").value;
+        const stk = document.getElementById("stockFilter").value;
+        const params = {
+          page: currentPage, limit: pageLimit,
+          sortBy: currentSort.sortBy, sortDir: currentSort.sortDir,
+        };
+        if (search) params.search = search;
+        if (cat) params.categoryId = cat;
+        if (stk) params.stockFilter = stk;
+
+        const [products, cats] = await Promise.all([
+          API.getProducts(params),
+          API.getCategories()
+        ]);
+        const total = products.total || products.data?.length || 0;
+        const totalPages = products.totalPages || Math.ceil(total / pageLimit);
+        const list = Array.isArray(products) ? products : (products.data || []);
+
+        // Populate category filter once
         const catSel = document.getElementById("catFilter");
-        cats.forEach(c => {
-          const opt = document.createElement("option"); opt.value = c.id; opt.textContent = c.name; catSel.appendChild(opt);
-        });
-        renderProducts(allProducts);
+        if (catSel.options.length <= 1) {
+          cats.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.id;
+            opt.textContent = c.name;
+            catSel.appendChild(opt);
+          });
+          if (cat) catSel.value = cat;
+        }
+
+        renderProducts(list);
+        renderPagination(total, totalPages);
       } catch(e) { console.error(e); }
     }
 
@@ -107,26 +149,50 @@
         : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy sản phẩm</td></tr>`;
     }
 
-    function filterProducts() {
-      const q = document.getElementById("searchInput").value.toLowerCase();
-      const cat = document.getElementById("catFilter").value;
-      const stk = document.getElementById("stockFilter").value;
-      renderProducts(allProducts.filter(p =>
-        (!q || p.name.toLowerCase().includes(q)) &&
-        (!cat || p.categoryId == cat) &&
-        (!stk || (stk === "low" ? p.stockQuantity < 50 : p.stockQuantity >= 50))
-      ));
+    function renderPagination(total, totalPages) {
+      if (totalPages <= 1) { document.getElementById("paginationWrap").style.display = "none"; return; }
+      document.getElementById("paginationWrap").style.display = "flex";
+      document.getElementById("paginationInfo").textContent = `Trang ${currentPage} / ${totalPages} — ${total} sản phẩm`;
+      const btns = document.getElementById("paginationBtns");
+      let html = '';
+      if (currentPage > 1) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage - 1})">←</button>`;
+      const maxBtns = 5;
+      let start = Math.max(1, currentPage - Math.floor(maxBtns / 2));
+      let end = Math.min(totalPages, start + maxBtns - 1);
+      if (end - start < maxBtns - 1) start = Math.max(1, end - maxBtns + 1);
+      if (start > 1) { html += `<button class="btn btn-sm btn-ghost" onclick="goPage(1)">1</button>`; if (start > 2) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; }
+      for (let i = start; i <= end; i++) html += `<button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+      if (end < totalPages) { if (end < totalPages - 1) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; html += `<button class="btn btn-sm btn-ghost" onclick="goPage(${totalPages})">${totalPages}</button>`; }
+      if (currentPage < totalPages) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage + 1})">→</button>`;
+      btns.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadProducts(); }
+    function filterProducts() { currentPage = 1; loadProducts(); }
+
+    function sortBy(field) {
+      if (currentSort.sortBy === field) currentSort.sortDir = currentSort.sortDir === 'ASC' ? 'DESC' : 'ASC';
+      else { currentSort.sortBy = field; currentSort.sortDir = 'ASC'; }
+      updateSortIcons();
+      currentPage = 1;
+      loadProducts();
+    }
+
+    function updateSortIcons() {
+      document.querySelectorAll('.sort-icon').forEach(el => el.textContent = '');
+      const icon = document.getElementById(`sort-icon-${currentSort.sortBy}`);
+      if (icon) icon.textContent = currentSort.sortDir === 'ASC' ? '↑' : '↓';
     }
 
     function confirmDelete(id, name) {
       DeleteConfirm.show(`"${name}"`, async () => {
-        try { await API.deleteProduct(id); allProducts = allProducts.filter(p => p.id !== id); renderProducts(allProducts); Utils.toast(`Đã xóa sản phẩm "${name}"`); }
+        try { await API.deleteProduct(id); Utils.toast(`Đã xóa sản phẩm "${name}"`); loadProducts(); }
         catch(e) { Utils.toast(e.message, "error"); }
       });
     }
 
     setActiveNav("products");
-    document.addEventListener("DOMContentLoaded", loadProducts);
+    document.addEventListener("DOMContentLoaded", () => { loadProducts(); updateSortIcons(); });
   </script>
 </body>
 </html>

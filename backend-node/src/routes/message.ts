@@ -63,9 +63,11 @@ export async function getAllMessages(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function getMessage(req: AuthRequest, res: Response): Promise<void> {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid message ID" }); return; }
   const messageRepo = AppDataSource.getRepository(Message);
   const message = await messageRepo.findOne({
-    where: { id: parseInt(req.params.id) },
+    where: { id },
     relations: ["user"],
   });
   if (!message) {
@@ -76,8 +78,10 @@ export async function getMessage(req: AuthRequest, res: Response): Promise<void>
 }
 
 export async function replyMessage(req: AuthRequest, res: Response): Promise<void> {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid message ID" }); return; }
   const messageRepo = AppDataSource.getRepository(Message);
-  const message = await messageRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const message = await messageRepo.findOne({ where: { id } });
   if (!message) {
     res.status(404).json({ error: "Message not found" });
     return;
@@ -93,8 +97,10 @@ export async function replyMessage(req: AuthRequest, res: Response): Promise<voi
 }
 
 export async function markAsRead(req: AuthRequest, res: Response): Promise<void> {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid message ID" }); return; }
   const messageRepo = AppDataSource.getRepository(Message);
-  const message = await messageRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const message = await messageRepo.findOne({ where: { id } });
   if (!message) {
     res.status(404).json({ error: "Message not found" });
     return;

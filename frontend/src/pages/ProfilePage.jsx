@@ -33,7 +33,7 @@ const ProfilePage = ({ navigate, user }) => {
         // Nếu chưa lưu lần nào nhưng đã có thông tin user từ login/register
         setForm({
           ...DEFAULT_USER_INFO,
-          fullName: user.name || "",
+          fullName: user.fullName || user.name || "",
           email: user.email || "",
           phone: user.phone || ""
         });

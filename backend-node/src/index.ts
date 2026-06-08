@@ -5,6 +5,14 @@ import { initializeDatabase } from "./config/database";
 import { seedDefaultUsers } from "./service/seedService";
 import { config } from "./config/env";
 
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[UnhandledRejection] Reason:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[UncaughtException]", err.message);
+});
+
 async function main() {
   console.log("[App] Initializing...");
 

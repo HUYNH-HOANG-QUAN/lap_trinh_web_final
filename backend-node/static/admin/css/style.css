@@ -205,6 +205,16 @@ tbody td { padding: 13px 16px; color: var(--text-primary); vertical-align: middl
 .page-btn:hover { border-color: var(--primary); color: var(--primary); }
 .page-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
 
+/* SORT */
+.sortable { cursor: pointer; user-select: none; }
+.sortable:hover { color: var(--primary); }
+.sort-icon { color: var(--text-muted); font-size: 11px; margin-left: 2px; }
+
+/* PAGINATION WRAP */
+.pagination-wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-top: 1px solid var(--border); gap: 12px; }
+.pagination-info { font-size: 13px; color: var(--text-muted); }
+.pagination { display: flex; align-items: center; gap: 4px; }
+
 /* MODAL */
 .modal-overlay { position: fixed; inset: 0; background: rgba(12, 26, 46, 0.45); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-overlay.open { display: flex; animation: overlayIn 0.2s ease; }

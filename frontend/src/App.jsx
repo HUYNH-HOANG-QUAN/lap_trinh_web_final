@@ -32,6 +32,8 @@ import ProductManagePage from "./pages/admin/ProductManagePage";
 import OrderManagePage   from "./pages/admin/OrderManagePage";
 import UserManagePage    from "./pages/admin/UserManagePage";
 import ContactInboxPage  from "./pages/admin/ContactInboxPage";
+import CategoryManagePage from "./pages/admin/CategoryManagePage";
+import AdminAccountPage   from "./pages/admin/AdminAccountPage";
 
 import "./styles/global.css";
 import { transformOrderFromBE } from "./utils/orderHelpers";
@@ -213,7 +215,7 @@ const App = () => {
   // [MỚI] Login / Logout
   const handleLogin = (userData) => {
     setUser(userData);
-    showToast(`👋 Xin chào, ${userData.name || userData.email}!`);
+    showToast(`👋 Xin chào, ${userData.fullName || userData.email}!`);
   };
 
   const handleLogout = () => {
@@ -360,24 +362,32 @@ const App = () => {
 
       // ── Admin (guard quyền) ───────────────────────
       case "admin-dashboard":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
         return <DashboardPage orders={orders} navigate={navigate} />;
 
       case "admin-products":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
         return <ProductManagePage showToast={showToast} />;
 
       case "admin-orders":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
         return <OrderManagePage orders={orders} onUpdateStatus={handleUpdateOrderStatus} showToast={showToast} />;
 
       case "admin-users":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
         return <UserManagePage showToast={showToast} navigate={navigate} />;
 
       case "admin-contact":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
         return <ContactInboxPage showToast={showToast} />;
+
+      case "admin-categories":
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
+        return <CategoryManagePage showToast={showToast} />;
+
+      case "admin-accounts":
+        if (!user || user.role?.toUpperCase() !== "ADMIN") { navigate("login"); return null; }
+        return <AdminAccountPage showToast={showToast} />;
 
       default:
         return <HomePage navigate={navigate} onAddToCart={handleAddToCart} onViewDetail={handleViewDetail} />;

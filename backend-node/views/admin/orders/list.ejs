@@ -42,7 +42,7 @@
                 <option value="">Tất cả trạng thái</option>
                 <option value="PENDING">Chờ xử lý</option>
                 <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="SHIPPED">Đang giao</option>
+                <option value="DELIVERED">Đang giao</option>
                 <option value="COMPLETED">Hoàn thành</option>
                 <option value="CANCELLED">Đã hủy</option>
               </select>
@@ -53,10 +53,22 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>ID</th><th>Order Code</th><th>Khách hàng</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th class="sortable" data-sort="id" onclick="sortBy('id')">ID <span class="sort-icon" id="sort-icon-id"></span></th>
+                  <th class="sortable" data-sort="orderCode" onclick="sortBy('orderCode')">Order Code <span class="sort-icon" id="sort-icon-orderCode"></span></th>
+                  <th>Khách hàng</th>
+                  <th class="sortable" data-sort="totalAmount" onclick="sortBy('totalAmount')">Total <span class="sort-icon" id="sort-icon-totalAmount"></span></th>
+                  <th class="sortable" data-sort="status" onclick="sortBy('status')">Status <span class="sort-icon" id="sort-icon-status"></span></th>
+                  <th class="sortable" data-sort="placedAt" onclick="sortBy('placedAt')">Ngày đặt <span class="sort-icon" id="sort-icon-placedAt"></span></th>
+                  <th>Actions</th>
+                </tr>
               </thead>
-              <tbody id="ordersBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr></tbody>
+              <tbody id="ordersBody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr></tbody>
             </table>
+          </div>
+          <div class="pagination-wrap" id="paginationWrap" style="display:none">
+            <div class="pagination-info" id="paginationInfo"></div>
+            <div class="pagination" id="paginationBtns"></div>
           </div>
         </div>
       </div>
@@ -79,14 +91,30 @@
     </div>
   </div>
 
-  <script src="/static/admin/js/admin.js"></script>
+  <script src="/static/admin/js/admin.js?v=2"></script>
   <script>
-    let allOrders = [];
+    let currentPage = 1;
+    const pageLimit = 20;
+    let currentSort = { sortBy: 'createdAt', sortDir: 'DESC' };
 
     async function loadOrders() {
       try {
-        allOrders = await API.getOrders();
-        renderOrders(allOrders);
+        const search = document.getElementById("searchInput").value.trim();
+        const status = document.getElementById("statusFilter").value;
+        const params = {
+          page: currentPage, limit: pageLimit,
+          sortBy: currentSort.sortBy, sortDir: currentSort.sortDir,
+        };
+        if (search) params.search = search;
+        if (status) params.status = status;
+
+        const res = await API.getOrders(params);
+        const orders = Array.isArray(res) ? res : (res.data || []);
+        const total = res.total || orders.length;
+        const totalPages = res.totalPages || Math.ceil(total / pageLimit);
+
+        renderOrders(orders);
+        renderPagination(total, totalPages);
       } catch(e) { console.error(e); }
     }
 
@@ -100,6 +128,7 @@
             <td>${o.userName || 'Guest'}</td>
             <td style="font-weight:700;color:var(--primary)">${Utils.formatCurrency(o.totalAmount)}</td>
             <td>${Utils.orderStatusBadge(o.status)}</td>
+            <td class="td-mono">${new Date(o.placedAt).toLocaleDateString('vi-VN')}</td>
             <td>
               <div class="action-group">
                 <a href="/admin/order/detail?id=${o.id}" class="btn btn-sm btn-outline">👁 View</a>
@@ -107,27 +136,53 @@
               </div>
             </td>
           </tr>`).join("")
-        : `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy đơn hàng nào</td></tr>`;
+        : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy đơn hàng nào</td></tr>`;
     }
 
-    function filterOrders() {
-      const q = document.getElementById("searchInput").value.toLowerCase();
-      const st = document.getElementById("statusFilter").value;
-      renderOrders(allOrders.filter(o =>
-        (!q || o.orderCode.toLowerCase().includes(q) || (o.userName || '').toLowerCase().includes(q)) &&
-        (!st || o.status === st)
-      ));
+    function renderPagination(total, totalPages) {
+      if (totalPages <= 1) { document.getElementById("paginationWrap").style.display = "none"; return; }
+      document.getElementById("paginationWrap").style.display = "flex";
+      document.getElementById("paginationInfo").textContent = `Trang ${currentPage} / ${totalPages} — ${total} đơn hàng`;
+      const btns = document.getElementById("paginationBtns");
+      let html = '';
+      if (currentPage > 1) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage - 1})">←</button>`;
+      const maxBtns = 5;
+      let start = Math.max(1, currentPage - Math.floor(maxBtns / 2));
+      let end = Math.min(totalPages, start + maxBtns - 1);
+      if (end - start < maxBtns - 1) start = Math.max(1, end - maxBtns + 1);
+      if (start > 1) { html += `<button class="btn btn-sm btn-ghost" onclick="goPage(1)">1</button>`; if (start > 2) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; }
+      for (let i = start; i <= end; i++) html += `<button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+      if (end < totalPages) { if (end < totalPages - 1) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; html += `<button class="btn btn-sm btn-ghost" onclick="goPage(${totalPages})">${totalPages}</button>`; }
+      if (currentPage < totalPages) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage + 1})">→</button>`;
+      btns.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadOrders(); }
+    function filterOrders() { currentPage = 1; loadOrders(); }
+
+    function sortBy(field) {
+      if (currentSort.sortBy === field) currentSort.sortDir = currentSort.sortDir === 'ASC' ? 'DESC' : 'ASC';
+      else { currentSort.sortBy = field; currentSort.sortDir = 'ASC'; }
+      updateSortIcons();
+      currentPage = 1;
+      loadOrders();
+    }
+
+    function updateSortIcons() {
+      document.querySelectorAll('.sort-icon').forEach(el => el.textContent = '');
+      const icon = document.getElementById(`sort-icon-${currentSort.sortBy}`);
+      if (icon) icon.textContent = currentSort.sortDir === 'ASC' ? '↑' : '↓';
     }
 
     function confirmDelete(id, code) {
       DeleteConfirm.show(`"${code}"`, async () => {
-        // Orders are typically not deleted, just cancelled - but this is the admin template
-        Utils.toast(`Đã xóa đơn hàng ${code}`);
+        try { await API.updateOrderStatus(id, 'CANCELLED'); Utils.toast(`Đã hủy đơn ${code}`); loadOrders(); }
+        catch(e) { Utils.toast(e.message, 'error'); }
       });
     }
 
     setActiveNav("orders");
-    document.addEventListener("DOMContentLoaded", loadOrders);
+    document.addEventListener("DOMContentLoaded", () => { loadOrders(); updateSortIcons(); });
   </script>
 </body>
 </html>

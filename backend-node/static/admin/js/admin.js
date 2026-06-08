@@ -1,6 +1,6 @@
 // admin.js — ProFit Admin Panel (Node.js/Express backend)
 
-const API_BASE = '';
+const API_BASE = 'http://localhost:3001';
 const TOKEN_KEY = 'profit_admin_token';
 
 function getToken() {
@@ -88,11 +88,13 @@ const API = {
     const opts = { method, headers: this._h(), credentials: 'include' };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(API_BASE + url, opts);
+    if (res.status === 204) return { success: true };
+    const text = await res.text();
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(err.message || `HTTP ${res.status}`);
+      try { const e = JSON.parse(text); throw new Error(e.message || `HTTP ${res.status}`); }
+      catch { throw new Error(text || `HTTP ${res.status}`); }
     }
-    return res.json();
+    try { return JSON.parse(text); } catch { return text; }
   },
 
   // ── AUTH ──────────────────────────────────────────────────
@@ -115,37 +117,56 @@ const API = {
   },
 
   // ── USERS ─────────────────────────────────────────────────
-  async getUsers() { return this._req('GET', '/admin/user/all'); },
-  async createUser(d) { return this._req('POST', '/admin/user/add', d); },
-  async updateUser(id, d) { return this._req('PUT', `/admin/user/${id}`, d); },
-  async deleteUser(id) { return this._req('DELETE', `/admin/user/${id}`); },
+  async getUsers(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this._req('GET', `/api/admin/user/all${qs ? `?${qs}` : ''}`);
+  },
+  async createUser(d) { return this._req('POST', '/api/admin/user/add', d); },
+  async updateUser(id, d) { return this._req('PUT', `/api/admin/user/${id}`, d); },
+  async deleteUser(id) { return this._req('DELETE', `/api/admin/user/${id}`); },
 
   // ── CATEGORIES ────────────────────────────────────────────
-  async getCategories() { return this._req('GET', '/admin/category/all'); },
-  async createCategory(d) { return this._req('POST', '/admin/category/add', d); },
-  async updateCategory(id, d) { return this._req('PUT', `/admin/category/${id}`, d); },
-  async deleteCategory(id) { return this._req('DELETE', `/admin/category/${id}`); },
+  async getCategories() { return this._req('GET', '/api/admin/category/all'); },
+  async createCategory(d) { return this._req('POST', '/api/admin/category/add', d); },
+  async updateCategory(id, d) { return this._req('PUT', `/api/admin/category/${id}`, d); },
+  async deleteCategory(id) { return this._req('DELETE', `/api/admin/category/${id}`); },
 
   // ── PRODUCTS ───────────────────────────────────────────────
-  async getProducts() { return this._req('GET', '/admin/product/all'); },
-  async createProduct(d) { return this._req('POST', '/admin/product/add', d); },
-  async updateProduct(id, d) { return this._req('PUT', `/admin/product/${id}`, d); },
-  async deleteProduct(id) { return this._req('DELETE', `/admin/product/${id}`); },
+  async getProducts(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this._req('GET', `/api/admin/product/all${qs ? `?${qs}` : ''}`);
+  },
+  async createProduct(d) { return this._req('POST', '/api/admin/product/add', d); },
+  async updateProduct(id, d) { return this._req('PUT', `/api/admin/product/${id}`, d); },
+  async deleteProduct(id) { return this._req('DELETE', `/api/admin/product/${id}`); },
 
   // ── ORDERS ────────────────────────────────────────────────
-  async getOrders() { return this._req('GET', '/admin/order/all'); },
-  async getOrderById(id) { return this._req('GET', `/admin/order/${id}`); },
+  async getOrders(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this._req('GET', `/api/admin/order/all${qs ? `?${qs}` : ''}`);
+  },
+  async getOrderById(id) { return this._req('GET', `/api/admin/order/${id}`); },
   async updateOrderStatus(id, status, paymentStatus) {
-    return this._req('PUT', `/admin/order/${id}/status`, { status, paymentStatus });
+    return this._req('PUT', `/api/admin/order/${id}/status`, { status, paymentStatus });
   },
 
   // ── DASHBOARD ─────────────────────────────────────────────
-  async getDashboardStats() { return this._req('GET', '/admin/dashboard/stats'); },
+  async getDashboardStats() { return this._req('GET', '/api/admin/dashboard/stats'); },
 
   // ── REVIEWS ───────────────────────────────────────────────
   async getReviews() {
     return this._req('GET', '/api/reviews/product/0').catch(() => []);
   },
+
+  // ── ADMIN ACCOUNTS ────────────────────────────────────────
+  async getAdminAccounts(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return this._req('GET', `/api/admin/account/all${qs ? `?${qs}` : ''}`);
+  },
+  async createAdminAccount(d) { return this._req('POST', '/api/admin/account/add', d); },
+  async updateAdminAccount(id, d) { return this._req('PUT', `/api/admin/account/${id}`, d); },
+  async deleteAdminAccount(id) { return this._req('DELETE', `/api/admin/account/${id}`); },
+  async changeAdminPassword(id, d) { return this._req('PUT', `/api/admin/account/${id}/password`, d); },
 
   // ── MESSAGES ──────────────────────────────────────────────
   async getMessages() { return this._req('GET', '/api/messages/admin/all'); },

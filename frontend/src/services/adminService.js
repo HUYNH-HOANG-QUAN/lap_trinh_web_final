@@ -1,27 +1,23 @@
 import { API_BASE_URL, getDefaultHeaders } from './apiConfig';
 
-const ADMIN_API_URL = `${API_BASE_URL}/admin`;
+const ADMIN_API_URL = `${API_BASE_URL}/api/admin`;
 
 export const adminService = {
     /**
      * Lấy danh sách tất cả người dùng
      * GET /admin/user/all
      */
-    getAllUsers: async () => {
-        try {
-            const response = await fetch(`${ADMIN_API_URL}/user/all`, {
-                method: 'GET',
-                headers: getDefaultHeaders(),
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || 'Failed to fetch users');
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Error in getAllUsers:', error);
-            throw error;
+    getAllUsers: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetch(`${ADMIN_API_URL}/user/all${qs ? `?${qs}` : ""}`, {
+            method: 'GET',
+            headers: getDefaultHeaders(),
+        });
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Failed to fetch users');
         }
+        return await res.json();
     },
 
     /**
@@ -88,8 +84,9 @@ export const adminService = {
     // ==========================================
     // CATEGORY APIs
     // ==========================================
-    getAllCategories: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/category/all`, { headers: getDefaultHeaders() });
+    getAllCategories: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetch(`${ADMIN_API_URL}/category/all${qs ? `?${qs}` : ""}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch categories');
         return res.json();
     },
@@ -123,8 +120,11 @@ export const adminService = {
     // ==========================================
     // PRODUCT APIs
     // ==========================================
-    getAllProducts: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/product/all`, { headers: getDefaultHeaders() });
+    getAllProducts: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetch(`${ADMIN_API_URL}/product/all${qs ? `?${qs}` : ""}`, {
+            headers: getDefaultHeaders()
+        });
         if (!res.ok) throw new Error('Failed to fetch products');
         return res.json();
     },
@@ -158,8 +158,9 @@ export const adminService = {
     // ==========================================
     // ORDER APIs
     // ==========================================
-    getAllOrders: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/order/all`, { headers: getDefaultHeaders() });
+    getAllOrders: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetch(`${ADMIN_API_URL}/order/all${qs ? `?${qs}` : ""}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch orders');
         return res.json();
     },
@@ -175,6 +176,11 @@ export const adminService = {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Failed to update order status');
+        return res.json();
+    },
+    getOrderCountsByStatus: async () => {
+        const res = await fetch(`${ADMIN_API_URL}/order/counts-by-status`, { headers: getDefaultHeaders() });
+        if (!res.ok) throw new Error('Failed to fetch order counts');
         return res.json();
     },
 
@@ -233,6 +239,59 @@ export const adminService = {
             headers: getDefaultHeaders()
         });
         if (!res.ok) throw new Error('Failed to get unread count');
+        return res.json();
+    },
+
+    // ==========================================
+    // ADMIN ACCOUNT APIs
+    // ==========================================
+    getAllAdminAccounts: async (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetch(`${ADMIN_API_URL}/account/all${qs ? `?${qs}` : ""}`, {
+            headers: getDefaultHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to fetch admin accounts');
+        return res.json();
+    },
+    createAdminAccount: async (data) => {
+        const res = await fetch(`${ADMIN_API_URL}/account/add`, {
+            method: 'POST',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ message: 'Failed to create admin account' }));
+            throw new Error(err.message);
+        }
+        return res.json();
+    },
+    updateAdminAccount: async (id, data) => {
+        const res = await fetch(`${ADMIN_API_URL}/account/${id}`, {
+            method: 'PUT',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update admin account');
+        return res.json();
+    },
+    deleteAdminAccount: async (id) => {
+        const res = await fetch(`${ADMIN_API_URL}/account/${id}`, {
+            method: 'DELETE',
+            headers: getDefaultHeaders()
+        });
+        if (!res.ok) throw new Error('Failed to delete admin account');
+        return true;
+    },
+    changeAdminPassword: async (id, data) => {
+        const res = await fetch(`${ADMIN_API_URL}/account/${id}/password`, {
+            method: 'PUT',
+            headers: getDefaultHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ message: 'Failed to change password' }));
+            throw new Error(err.message);
+        }
         return res.json();
     },
 

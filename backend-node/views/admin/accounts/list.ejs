@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Admin Accounts — VitaStore Admin</title>
+  <link rel="stylesheet" href="/static/admin/css/style.css?v=2" />
+</head>
+<body>
+  <div class="admin-layout">
+    <%- include('../fragments/sidebar') %>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-info">
+          <div class="topbar-title">Admin Accounts</div>
+          <div class="topbar-breadcrumb">Quản lý tài khoản quản trị</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleLogoutDropdown()">⚙️</button>
+          <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+            <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Quản lý tài khoản Admin</div>
+            <div class="page-subtitle">Thêm, sửa, xóa và đổi mật khẩu quản trị viên</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAdd()">+ Thêm Admin</button>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card"><div class="stat-icon blue">👑</div><div><div class="stat-val" id="countTotal">—</div><div class="stat-label">Tổng Admin</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✓</div><div><div class="stat-val" id="countActive">—</div><div class="stat-label">Đang hoạt động</div></div></div>
+          <div class="stat-card"><div class="stat-icon red">✗</div><div><div class="stat-val" id="countInactive">—</div><div class="stat-label">Bị khóa</div></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="toolbar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Tìm tên, email, SĐT..." oninput="applyFilters()" />
+              </div>
+              <select class="select-filter" id="statusFilter" onchange="applyFilters()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+            <span class="badge badge-info" id="recordCount">—</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="id" onclick="sortBy('id')">ID <span class="sort-icon" id="sort-icon-id"></span></th>
+                  <th class="sortable" data-sort="fullName" onclick="sortBy('fullName')">Họ tên <span class="sort-icon" id="sort-icon-fullName"></span></th>
+                  <th class="sortable" data-sort="email" onclick="sortBy('email')">Email <span class="sort-icon" id="sort-icon-email"></span></th>
+                  <th>Điện thoại</th>
+                  <th class="sortable" data-sort="status" onclick="sortBy('status')">Trạng thái <span class="sort-icon" id="sort-icon-status"></span></th>
+                  <th class="sortable" data-sort="createdAt" onclick="sortBy('createdAt')">Ngày tạo <span class="sort-icon" id="sort-icon-createdAt"></span></th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="accountsBody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pagination-wrap" id="paginationWrap" style="display:none">
+            <div class="pagination-info" id="paginationInfo"></div>
+            <div class="pagination" id="paginationBtns"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit -->
+  <div class="modal-overlay" id="accountModalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="accountModalTitle">Thêm Admin</div>
+        <button class="btn btn-ghost btn-icon" onclick="Modal.close('accountModalOverlay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="aId" />
+        <div class="form-group"><label class="form-label">Họ và tên *</label><input class="form-control" id="aName" required /></div>
+        <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="aEmail" type="email" required /></div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Số điện thoại</label><input class="form-control" id="aPhone" /></div>
+          <div class="form-group"><label class="form-label">Trạng thái</label>
+            <select class="form-control" id="aStatus">
+              <option value="ACTIVE">● Active</option>
+              <option value="INACTIVE">● Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="passwordLabel">Mật khẩu *</label>
+          <input class="form-control" id="aPassword" type="password" />
+          <small style="color:var(--text-muted);font-size:11px" id="passwordHint">Bắt buộc khi tạo mới</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="Modal.close('accountModalOverlay')">Hủy</button>
+        <button class="btn btn-primary" id="aSaveBtn" onclick="saveAccount()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Change Password -->
+  <div class="modal-overlay" id="passwordModalOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">Đổi mật khẩu</div>
+        <button class="btn btn-ghost btn-icon" onclick="Modal.close('passwordModalOverlay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pwId" />
+        <p style="color:var(--text-muted);margin-bottom:16px;font-size:13px">
+          Đổi mật khẩu cho: <strong id="pwAccountName"></strong>
+        </p>
+        <div class="form-group"><label class="form-label">Mật khẩu hiện tại *</label><input class="form-control" id="pwCurrent" type="password" /></div>
+        <div class="form-group"><label class="form-label">Mật khẩu mới *</label><input class="form-control" id="pwNew" type="password" /></div>
+        <div class="form-group"><label class="form-label">Xác nhận mật khẩu mới *</label><input class="form-control" id="pwConfirm" type="password" /></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="Modal.close('passwordModalOverlay')">Hủy</button>
+        <button class="btn btn-primary" id="pwSaveBtn" onclick="savePassword()">💾 Đổi mật khẩu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Delete Confirm -->
+  <div class="modal-overlay" id="deleteModalOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-body" style="padding:32px 28px 20px;text-align:center">
+        <div class="confirm-icon">🗑️</div>
+        <div class="confirm-title">Xác nhận xóa tài khoản</div>
+        <div class="confirm-text">Bạn đang xóa admin<br /><strong id="deleteTargetLabel"></strong></div>
+        <div class="countdown-bar"><div class="countdown-fill" id="countdownFill"></div></div>
+        <div class="countdown-label" id="countdownLabel">Vui lòng chờ 10 giây...</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="DeleteConfirm.hide()">Hủy</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn" onclick="DeleteConfirm.confirm()" disabled>Xác nhận xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin/js/admin.js"></script>
+  <script>
+    let allAccounts = [];
+    let currentPage = 1;
+    const pageLimit = 20;
+    let currentSort = { sortBy: 'createdAt', sortDir: 'DESC' };
+
+    async function loadAccounts() {
+      try {
+        const params = {
+          page: currentPage,
+          limit: pageLimit,
+          sortBy: currentSort.sortBy,
+          sortDir: currentSort.sortDir,
+        };
+        const search = document.getElementById('searchInput').value.trim();
+        const status = document.getElementById('statusFilter').value;
+        if (search) params.search = search;
+        if (status) params.status = status;
+
+        const res = await API.getAdminAccounts(params);
+        allAccounts = res.data || [];
+        renderStats(res);
+        renderAccounts(allAccounts);
+        renderPagination(res);
+      } catch(e) {
+        console.error(e);
+        document.getElementById('accountsBody').innerHTML =
+          `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">Lỗi: ${e.message}</td></tr>`;
+      }
+    }
+
+    function renderStats(res) {
+      document.getElementById('countTotal').textContent = res.total || 0;
+      document.getElementById('countActive').textContent = allAccounts.filter(a => a.status === 'ACTIVE').length;
+      document.getElementById('countInactive').textContent = allAccounts.filter(a => a.status !== 'ACTIVE').length;
+    }
+
+    function renderAccounts(list) {
+      document.getElementById('recordCount').textContent = `${list.length} tài khoản`;
+      if (!list.length) {
+        document.getElementById('accountsBody').innerHTML =
+          `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Chưa có tài khoản admin nào</td></tr>`;
+        return;
+      }
+      document.getElementById('accountsBody').innerHTML = list.map(a => `
+        <tr>
+          <td class="td-mono">${a.id}</td>
+          <td><strong>${a.fullName}</strong></td>
+          <td>${a.email}</td>
+          <td class="td-mono">${a.phone || '—'}</td>
+          <td>${a.status === 'ACTIVE'
+            ? '<span class="badge badge-success">● Active</span>'
+            : '<span class="badge badge-danger">● Inactive</span>'}</td>
+          <td class="td-mono">${new Date(a.createdAt).toLocaleDateString('vi-VN')}</td>
+          <td>
+            <div class="action-group">
+              <button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(a)})'>✏️ Sửa</button>
+              <button class="btn btn-sm btn-outline" onclick='openPassword("${a.id}","${a.fullName.replace(/"/g, '\\"')}")'>🔑 Mật khẩu</button>
+              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${a.id},'${a.fullName.replace(/'/g, "\\'")}')">🗑</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function renderPagination(res) {
+      const totalPages = res.totalPages || 1;
+      if (totalPages <= 1) {
+        document.getElementById('paginationWrap').style.display = 'none';
+        return;
+      }
+      document.getElementById('paginationWrap').style.display = 'flex';
+      document.getElementById('paginationInfo').textContent =
+        `Trang ${res.page} / ${totalPages} — ${res.total} tài khoản`;
+
+      const btns = document.getElementById('paginationBtns');
+      let html = '';
+      if (currentPage > 1) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage - 1})">←</button>`;
+      const maxBtns = 5;
+      let start = Math.max(1, currentPage - Math.floor(maxBtns / 2));
+      let end = Math.min(totalPages, start + maxBtns - 1);
+      if (end - start < maxBtns - 1) start = Math.max(1, end - maxBtns + 1);
+      if (start > 1) { html += `<button class="btn btn-sm btn-ghost" onclick="goPage(1)">1</button>`; if (start > 2) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; }
+      for (let i = start; i <= end; i++) {
+        html += `<button class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+      }
+      if (end < totalPages) { if (end < totalPages - 1) html += `<span style="padding:0 4px;color:var(--text-muted)">...</span>`; html += `<button class="btn btn-sm btn-ghost" onclick="goPage(${totalPages})">${totalPages}</button>`; }
+      if (currentPage < totalPages) html += `<button class="btn btn-sm btn-outline" onclick="goPage(${currentPage + 1})">→</button>`;
+      btns.innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadAccounts(); }
+
+    function applyFilters() { currentPage = 1; loadAccounts(); }
+
+    function sortBy(field) {
+      if (currentSort.sortBy === field) {
+        currentSort.sortDir = currentSort.sortDir === 'ASC' ? 'DESC' : 'ASC';
+      } else {
+        currentSort.sortBy = field;
+        currentSort.sortDir = 'ASC';
+      }
+      updateSortIcons();
+      currentPage = 1;
+      loadAccounts();
+    }
+
+    function updateSortIcons() {
+      document.querySelectorAll('.sort-icon').forEach(el => el.textContent = '');
+      const icon = document.getElementById(`sort-icon-${currentSort.sortBy}`);
+      if (icon) icon.textContent = currentSort.sortDir === 'ASC' ? '↑' : '↓';
+    }
+
+    function openAdd() {
+      document.getElementById('aId').value = '';
+      document.getElementById('aName').value = '';
+      document.getElementById('aEmail').value = '';
+      document.getElementById('aPhone').value = '';
+      document.getElementById('aStatus').value = 'ACTIVE';
+      document.getElementById('aPassword').value = '';
+      document.getElementById('aPassword').required = true;
+      document.getElementById('accountModalTitle').textContent = 'Thêm Admin mới';
+      document.getElementById('passwordLabel').textContent = 'Mật khẩu *';
+      document.getElementById('passwordHint').style.display = '';
+      Modal.open('accountModalOverlay');
+    }
+
+    function openEdit(a) {
+      document.getElementById('aId').value = a.id;
+      document.getElementById('aName').value = a.fullName;
+      document.getElementById('aEmail').value = a.email;
+      document.getElementById('aPhone').value = a.phone || '';
+      document.getElementById('aStatus').value = a.status || 'ACTIVE';
+      document.getElementById('aPassword').value = '';
+      document.getElementById('aPassword').required = false;
+      document.getElementById('accountModalTitle').textContent = `Chỉnh sửa: ${a.fullName}`;
+      document.getElementById('passwordLabel').textContent = 'Mật khẩu mới';
+      document.getElementById('passwordHint').style.display = 'none';
+      Modal.open('accountModalOverlay');
+    }
+
+    async function saveAccount() {
+      const name = document.getElementById('aName').value.trim();
+      const email = document.getElementById('aEmail').value.trim();
+      const password = document.getElementById('aPassword').value;
+      const editId = document.getElementById('aId').value;
+
+      if (!name || !email) { Utils.toast('Vui lòng nhập tên và email!', 'error'); return; }
+      if (!editId && !password) { Utils.toast('Mật khẩu bắt buộc khi tạo admin mới!', 'error'); return; }
+
+      const btn = document.getElementById('aSaveBtn');
+      btn.disabled = true; btn.textContent = '⏳...';
+
+      const data = {
+        fullName: name,
+        email,
+        phone: document.getElementById('aPhone').value.trim() || undefined,
+        status: document.getElementById('aStatus').value,
+      };
+      if (password) data.passwordHash = password;
+
+      try {
+        if (editId) { await API.updateAdminAccount(parseInt(editId), data); Utils.toast('Đã cập nhật tài khoản!'); }
+        else { await API.createAdminAccount(data); Utils.toast('Đã thêm admin mới!'); }
+        Modal.close('accountModalOverlay');
+        loadAccounts();
+      } catch(e) { Utils.toast(e.message || 'Có lỗi xảy ra', 'error'); }
+      finally { btn.disabled = false; btn.innerHTML = '💾 Lưu'; }
+    }
+
+    function openPassword(id, name) {
+      document.getElementById('pwId').value = id;
+      document.getElementById('pwAccountName').textContent = name;
+      document.getElementById('pwCurrent').value = '';
+      document.getElementById('pwNew').value = '';
+      document.getElementById('pwConfirm').value = '';
+      Modal.open('passwordModalOverlay');
+    }
+
+    async function savePassword() {
+      const id = document.getElementById('pwId').value;
+      const current = document.getElementById('pwCurrent').value;
+      const newPw = document.getElementById('pwNew').value;
+      const confirm = document.getElementById('pwConfirm').value;
+
+      if (!current || !newPw) { Utils.toast('Vui lòng nhập đầy đủ mật khẩu!', 'error'); return; }
+      if (newPw !== confirm) { Utils.toast('Mật khẩu mới không khớp!', 'error'); return; }
+      if (newPw.length < 6) { Utils.toast('Mật khẩu mới phải có ít nhất 6 ký tự!', 'error'); return; }
+
+      const btn = document.getElementById('pwSaveBtn');
+      btn.disabled = true; btn.textContent = '⏳...';
+
+      try {
+        await API.changeAdminPassword(parseInt(id), { currentPassword: current, newPassword: newPw });
+        Utils.toast('Đổi mật khẩu thành công!');
+        Modal.close('passwordModalOverlay');
+      } catch(e) { Utils.toast(e.message || 'Có lỗi xảy ra', 'error'); }
+      finally { btn.disabled = false; btn.innerHTML = '💾 Đổi mật khẩu'; }
+    }
+
+    function confirmDelete(id, name) {
+      DeleteConfirm.show(`"${name}"`, async () => {
+        try {
+          await API.deleteAdminAccount(id);
+          Utils.toast(`Đã xóa admin "${name}"`);
+          loadAccounts();
+        } catch(e) { Utils.toast(e.message || 'Có lỗi khi xóa', 'error'); }
+      });
+    }
+
+    setActiveNav('accounts');
+    document.addEventListener('DOMContentLoaded', () => { loadAccounts(); updateSortIcons(); });
+  </script>
+</body>
+</html>

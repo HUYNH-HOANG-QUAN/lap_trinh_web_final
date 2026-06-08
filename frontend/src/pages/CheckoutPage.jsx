@@ -28,7 +28,7 @@ const CheckoutPage = ({ cart = [], user, onPlaceOrder, navigate, showToast }) =>
       } else if (user) {
         setUserInfo({
           ...DEFAULT_USER_INFO,
-          fullName: user.name || "",
+          fullName: user.fullName || user.name || "",
           email: user.email || "",
           phone: user.phone || "",
         });

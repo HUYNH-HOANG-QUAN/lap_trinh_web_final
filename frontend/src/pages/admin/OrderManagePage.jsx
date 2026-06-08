@@ -37,48 +37,45 @@ const OrderManagePage = ({ onUpdateStatus, showToast }) => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [statusCounts, setStatusCounts] = useState({});
+  const PAGE_LIMIT = 20;
+  const totalPages = Math.ceil(total / PAGE_LIMIT);
+
+  const fetchStatusCounts = async () => {
+    try {
+      const counts = await adminService.getOrderCountsByStatus();
+      setStatusCounts(counts);
+    } catch {
+      // non-critical, ignore
+    }
+  };
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getAllOrders();
-      setOrders(data);
+      const params = { page, limit: PAGE_LIMIT, sortBy: "placedAt", sortDir: "DESC" };
+      if (filter !== "all") params.status = filter;
+      if (search.trim()) params.search = search.trim();
+      const res = await adminService.getAllOrders(params);
+      const list = Array.isArray(res) ? res : (res.data || []);
+      setOrders(list);
+      setTotal(res.total || list.length);
     } catch (error) {
-      showToast(`❌ Lỗi tải đơn hàng: ${error.message}`);
+      showToast(`Lỗi tải đơn hàng: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useEffect(() => { fetchOrders(); fetchStatusCounts(); }, [page, filter, search]);
 
-  // Sắp xếp ưu tiên: PENDING_CONFIRM lên đầu, sau đó theo thời gian
-  const sortedOrders = [...orders].sort((a, b) => {
-    // Ưu tiên PENDING_CONFIRM lên đầu
-    if (a.paymentStatus === "PENDING_CONFIRM" && b.paymentStatus !== "PENDING_CONFIRM") return -1;
-    if (a.paymentStatus !== "PENDING_CONFIRM" && b.paymentStatus === "PENDING_CONFIRM") return 1;
-    // Sau đó theo thời gian (mới nhất lên đầu)
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
-
-  const filtered = sortedOrders.filter((o) => {
-    const matchStatus = filter === "all" || o.status === filter;
-    // Nếu filter là PENDING_CONFIRM thì lọc theo paymentStatus
-    const matchPaymentStatus = filter === "PENDING_CONFIRM" 
-      ? o.paymentStatus === "PENDING_CONFIRM" 
-      : true;
-    const matchSearch = String(o.orderCode).toLowerCase().includes(search.toLowerCase()) || 
-                        (o.recipientName || "").toLowerCase().includes(search.toLowerCase()) ||
-                        String(o.id).includes(search);
-    return matchStatus && matchSearch && matchPaymentStatus;
-  });
+  const filtered = orders;
 
   const countByStatus = (key) => {
-    if (key === "all") return orders.length;
-    if (key === "PENDING_CONFIRM") return orders.filter(o => o.paymentStatus === "PENDING_CONFIRM").length;
-    return orders.filter(o => o.status === key).length;
+    if (key === "all") return statusCounts.all ?? total;
+    return statusCounts[key] ?? "—";
   };
 
   const handleUpdateStatus = async (orderId, statusData) => {
@@ -117,7 +114,7 @@ const OrderManagePage = ({ onUpdateStatus, showToast }) => {
       <div className="order-tabs" style={{ marginBottom: 20 }}>
         {STATUS_LIST.map((tab) => (
           <button key={tab.key} className={`order-tab ${filter === tab.key ? "active" : ""}`}
-            onClick={() => setFilter(tab.key)}>
+            onClick={() => { setFilter(tab.key); setPage(1); }}>
             {tab.label}
             <span style={{ marginLeft: 6, fontSize: 11, background: "var(--dark3)", padding: "2px 7px", borderRadius: 10 }}>
               {countByStatus(tab.key)}
@@ -129,12 +126,27 @@ const OrderManagePage = ({ onUpdateStatus, showToast }) => {
       <div className="filter-bar" style={{ marginBottom: 20 }}>
         <div className="search-wrap" style={{ flex: 1 }}>
           <span>🔍</span>
-          <input className="search-input" placeholder="Tìm theo mã đơn, tên khách..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="search-input" placeholder="Tìm theo mã đơn, tên khách..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
         <span style={{ color: "var(--gray)", fontSize: 14 }}>
-          {filtered.length} đơn hàng
+          {total} đơn hàng
         </span>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "var(--card-bg)", borderRadius: 12, marginBottom: 16, border: "1px solid #2a2a2a" }}>
+          <span style={{ fontSize: 13, color: "var(--gray)" }}>Trang {page} / {totalPages} — {total} đơn hàng</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button className="btn-outline" style={{ padding: "6px 14px", fontSize: 13 }} disabled={page <= 1} onClick={() => setPage(p => p - 1)}>←</button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i;
+              return <button key={p} className={p === page ? "btn-primary" : "btn-outline"} style={{ padding: "6px 14px", fontSize: 13 }} onClick={() => setPage(p)}>{p}</button>;
+            })}
+            <button className="btn-outline" style={{ padding: "6px 14px", fontSize: 13 }} disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="empty-state"><h3>Đang tải dữ liệu...</h3></div>

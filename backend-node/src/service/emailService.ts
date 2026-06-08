@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { config } from "../config/env";
 
-export const transporter = nodemailer.createTransport({
+const getTransporter = () => nodemailer.createTransport({
   host: config.email.smtp.host,
   port: config.email.smtp.port,
   secure: config.email.smtp.secure,
@@ -12,6 +12,7 @@ export const transporter = nodemailer.createTransport({
 });
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  const transporter = getTransporter();
   await transporter.sendMail({
     from: `"ProFit" <${config.email.from}>`,
     to,

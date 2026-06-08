@@ -71,24 +71,23 @@ const DashboardPage = ({ navigate }) => {
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("day"); // day | month | year
+  const [activeTab, setActiveTab] = useState("day"); // day | week | month | year
   const [pendingConfirmCount, setPendingConfirmCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, ordersData, notifData] = await Promise.all([
-          adminService.getDashboardStats(),
-          adminService.getAllOrders(),
-          adminService.getUnreadCount(),
-        ]);
+        const statsData = await adminService.getDashboardStats();
+        const ordersResult = await adminService.getAllOrders({ limit: 6, sortBy: "placedAt", sortDir: "DESC" });
+        const notifData = await adminService.getUnreadCount();
         setStats(statsData);
-        setOrders(ordersData);
+        const rawOrders = ordersResult?.data || ordersResult || [];
+        setOrders(rawOrders);
 
-        const pending = ordersData.filter(o => o.paymentStatus === "PENDING_CONFIRM").length;
+        const pending = rawOrders.filter(o => o.paymentStatus === "PENDING_CONFIRM").length;
         setPendingConfirmCount(pending);
-        setUnreadMessageCount(notifData.count || 0);
+        setUnreadMessageCount(notifData?.count ?? 0);
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -101,9 +100,11 @@ const DashboardPage = ({ navigate }) => {
   // Chart data based on active tab
   const chartData = activeTab === "day"
     ? (stats?.revenueByDay || [])
-    : activeTab === "month"
-      ? (stats?.revenueByMonth || [])
-      : (stats?.revenueByYear || []);
+    : activeTab === "week"
+      ? (stats?.revenueByWeek || [])
+      : activeTab === "month"
+        ? (stats?.revenueByMonth || [])
+        : (stats?.revenueByYear || []);
 
   const maxRevenue = chartData.length > 0
     ? Math.max(...chartData.map(d => Number(d.revenue) || 0))
@@ -256,13 +257,10 @@ const DashboardPage = ({ navigate }) => {
           <div style={{ fontSize: 32, marginBottom: 8 }}>📆</div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Doanh Thu Tuần</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--green)", lineHeight: 1 }}>
-            {formatPrice(stats?.todayRevenue)}
+            {formatPrice(stats?.weekRevenue)}
           </div>
           <div style={{ fontSize: 11, color: "var(--gray)", marginTop: 6 }}>
-            {(() => {
-              const weekRevenue = (stats?.revenueByDay || []).slice(-7).reduce((s, d) => s + Number(d.revenue || 0), 0);
-              return `7 ngày gần nhất: ${formatPrice(weekRevenue)}`;
-            })()}
+            Tuần này (${new Date().toLocaleDateString("vi-VN", {weekday: "long"})})
           </div>
         </div>
 
@@ -304,14 +302,15 @@ const DashboardPage = ({ navigate }) => {
               </p>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              {[
-                { key: "day", label: "30 Ngày" },
-                { key: "month", label: "12 Tháng" },
-                { key: "year", label: "5 Năm" },
-              ].map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                {[
+                  { key: "day", label: "30 Ngày" },
+                  { key: "week", label: "Tuần này" },
+                  { key: "month", label: "12 Tháng" },
+                  { key: "year", label: "Năm" },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
                   style={{
                     padding: "6px 14px",
                     borderRadius: 8,
@@ -382,7 +381,7 @@ const DashboardPage = ({ navigate }) => {
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={activeTab === "day" ? "url(#barGradient)" : activeTab === "month" ? "url(#barGradientMonth)" : "url(#barGradientYear)"}
+                      fill={activeTab === "day" ? "url(#barGradient)" : activeTab === "week" ? "url(#barGradientMonth)" : activeTab === "month" ? "url(#barGradientMonth)" : "url(#barGradientYear)"}
                     />
                   ))}
                   {activeTab !== "day" && (
@@ -440,8 +439,10 @@ const DashboardPage = ({ navigate }) => {
             </h4>
             {[
               { icon: "📦", label: "Quản lý sản phẩm", page: "admin-products", desc: "CRUD sản phẩm" },
+              { icon: "🗂", label: "Quản lý danh mục", page: "admin-categories", desc: "Thêm/sửa danh mục" },
               { icon: "🛒", label: "Quản lý đơn hàng", page: "admin-orders", desc: "Xử lý đơn hàng" },
               { icon: "👥", label: "Quản lý User", page: "admin-users", desc: "Người dùng" },
+              { icon: "🔐", label: "Tài khoản Admin", page: "admin-accounts", desc: "CRUD tài khoản admin" },
               { icon: "💬", label: "Hộp thư liên hệ", page: "admin-contact", desc: "Tin nhắn", badge: unreadMessageCount },
             ].map(item => (
               <div key={item.label} onClick={() => navigate(item.page)}

@@ -76,6 +76,15 @@ export async function createUser(req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
+  const existing = await userRepo
+    .createQueryBuilder("user")
+    .where("user.email = :email AND user.deletedAt IS NULL", { email: email.trim() })
+    .getOne();
+  if (existing) {
+    res.status(400).json({ message: "Email already exists" });
+    return;
+  }
+
   const user = new User();
   user.fullName = fullName.trim();
   user.email = email.trim();
@@ -432,6 +441,20 @@ export async function getOrderByIdAdmin(req: AuthRequest, res: Response): Promis
       unitPrice: i.unitPrice, lineTotal: i.lineTotal,
     })),
   });
+}
+
+export async function getOrderCountsByStatus(req: AuthRequest, res: Response): Promise<void> {
+  const orderRepo = AppDataSource.getRepository(Order);
+  const statuses = ["PENDING", "CONFIRMED", "DELIVERED", "COMPLETED", "CANCELLED", "PENDING_CONFIRM"];
+  const counts: Record<string, number> = { all: 0 };
+
+  for (const status of statuses) {
+    const count = await orderRepo.count({ where: { status: status as any } });
+    counts[status] = count;
+    counts.all += count;
+  }
+
+  res.json(counts);
 }
 
 // ============================================================

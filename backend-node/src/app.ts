@@ -5,6 +5,9 @@ import path from "path";
 import { authenticate, requireAdmin } from "./middleware/auth";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
+import { Response } from "express";
+import { AppDataSource } from "./config/database";
+import { AuthRequest } from "./middleware/auth";
 import * as authRoutes from "./routes/auth";
 import * as publicRoutes from "./routes/public";
 import * as userRoutes from "./routes/user";
@@ -67,7 +70,6 @@ app.put("/api/users/profile", authenticate, userRoutes.updateProfile);
 app.post("/api/orders/create", authenticate, orderRoutes.createOrder);
 app.post("/api/orders/guest", orderRoutes.createGuestOrder);
 app.get("/api/orders/my-orders", authenticate, orderRoutes.getMyOrders);
-app.put("/api/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
 
 // ============================================
 // Review routes
@@ -105,33 +107,41 @@ app.post("/api/v1/payment/vnpay-ipn", paymentRoutes.vnpayIpn);
 // ============================================
 // Admin routes (API endpoints)
 // ============================================
-app.get("/admin/user/all", authenticate, requireAdmin, adminRoutes.getAllUsers);
-app.post("/admin/user/add", authenticate, requireAdmin, adminRoutes.createUser);
-app.put("/admin/user/:id", authenticate, requireAdmin, adminRoutes.updateUser);
-app.delete("/admin/user/:id", authenticate, requireAdmin, adminRoutes.deleteUser);
+app.get("/api/admin/user/all", authenticate, requireAdmin, adminRoutes.getAllUsers);
+app.post("/api/admin/user/add", authenticate, requireAdmin, adminRoutes.createUser);
+app.put("/api/admin/user/:id", authenticate, requireAdmin, adminRoutes.updateUser);
+app.delete("/api/admin/user/:id", authenticate, requireAdmin, adminRoutes.deleteUser);
 
-app.get("/admin/category/all", authenticate, requireAdmin, adminRoutes.getAllCategoriesAdmin);
-app.post("/admin/category/add", authenticate, requireAdmin, adminRoutes.createCategory);
-app.put("/admin/category/:id", authenticate, requireAdmin, adminRoutes.updateCategory);
-app.delete("/admin/category/:id", authenticate, requireAdmin, adminRoutes.deleteCategory);
+app.get("/api/admin/category/all", authenticate, requireAdmin, adminRoutes.getAllCategoriesAdmin);
+app.post("/api/admin/category/add", authenticate, requireAdmin, adminRoutes.createCategory);
+app.put("/api/admin/category/:id", authenticate, requireAdmin, adminRoutes.updateCategory);
+app.delete("/api/admin/category/:id", authenticate, requireAdmin, adminRoutes.deleteCategory);
 
-app.get("/admin/product/all", authenticate, requireAdmin, adminRoutes.getAllProductsAdmin);
-app.post("/admin/product/add", authenticate, requireAdmin, adminRoutes.createProduct);
-app.put("/admin/product/:id", authenticate, requireAdmin, adminRoutes.updateProduct);
-app.delete("/admin/product/:id", authenticate, requireAdmin, adminRoutes.deleteProduct);
+app.get("/api/admin/product/all", authenticate, requireAdmin, adminRoutes.getAllProductsAdmin);
+app.post("/api/admin/product/add", authenticate, requireAdmin, adminRoutes.createProduct);
+app.put("/api/admin/product/:id", authenticate, requireAdmin, adminRoutes.updateProduct);
+app.delete("/api/admin/product/:id", authenticate, requireAdmin, adminRoutes.deleteProduct);
 
-app.get("/admin/order/all", authenticate, requireAdmin, adminRoutes.getAllOrdersAdmin);
-app.get("/admin/order/:id", authenticate, requireAdmin, adminRoutes.getOrderByIdAdmin);
-app.put("/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
+app.get("/api/admin/order/all", authenticate, requireAdmin, adminRoutes.getAllOrdersAdmin);
+app.get("/api/admin/order/counts-by-status", authenticate, requireAdmin, adminRoutes.getOrderCountsByStatus);
+app.get("/api/admin/order/:id", authenticate, requireAdmin, adminRoutes.getOrderByIdAdmin);
+app.put("/api/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
 
-app.get("/admin/dashboard/stats", authenticate, requireAdmin, dashboardRoutes.getDashboardStats);
+app.get("/api/admin/dashboard/stats", authenticate, requireAdmin, dashboardRoutes.getDashboardStats);
+app.get("/api/admin/notifications", authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  const messageRepo = AppDataSource.getRepository("Message" as any);
+  const orderRepo = AppDataSource.getRepository("Order" as any);
+  const unreadMessages = await messageRepo.count({ where: { status: "UNREAD" as any } });
+  const pendingOrders = await orderRepo.count({ where: { status: "PENDING" as any, paymentStatus: "UNPAID" as any } });
+  res.json({ count: unreadMessages + pendingOrders });
+});
 
 // Admin account management
-app.get("/admin/account/all", authenticate, requireAdmin, adminRoutes.getAllAdminAccounts);
-app.post("/admin/account/add", authenticate, requireAdmin, adminRoutes.createAdminAccount);
-app.put("/admin/account/:id", authenticate, requireAdmin, adminRoutes.updateAdminAccount);
-app.delete("/admin/account/:id", authenticate, requireAdmin, adminRoutes.deleteAdminAccount);
-app.put("/admin/account/:id/password", authenticate, requireAdmin, adminRoutes.changeAdminPassword);
+app.get("/api/admin/account/all", authenticate, requireAdmin, adminRoutes.getAllAdminAccounts);
+app.post("/api/admin/account/add", authenticate, requireAdmin, adminRoutes.createAdminAccount);
+app.put("/api/admin/account/:id/password", authenticate, requireAdmin, adminRoutes.changeAdminPassword);
+app.put("/api/admin/account/:id", authenticate, requireAdmin, adminRoutes.updateAdminAccount);
+app.delete("/api/admin/account/:id", authenticate, requireAdmin, adminRoutes.deleteAdminAccount);
 
 // ============================================
 // Admin view routes (EJS templates)
@@ -171,6 +181,9 @@ app.get("/admin/reviews/review", authenticate, requireAdmin, (req: any, res) => 
 });
 app.get("/admin/account/list", authenticate, requireAdmin, (req: any, res) => {
   res.render("accounts/list", { user: req.user });
+});
+app.get("/admin/contact/inbox", authenticate, requireAdmin, (req: any, res) => {
+  res.render("contact/index", { user: req.user });
 });
 
 // Error handlers

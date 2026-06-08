@@ -33,7 +33,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 }
 
 export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): void {
-  if (!req.user || req.user.role !== "ROLE_ADMIN") {
+  if (!req.user || req.user.role !== "ADMIN") {
     res.status(403).json({ error: "Forbidden", message: "Yeu cau quyen Admin" });
     return;
   }

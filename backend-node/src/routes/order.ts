@@ -36,6 +36,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<void
   const { recipientName, recipientPhone, shippingAddressLine1, shippingCity, shippingProvince, note, items } = req.body;
 
   const order = new Order();
+  order.items = [];
   order.userId = user.id;
   order.orderCode = generateOrderCode();
   order.recipientName = recipientName;
@@ -82,6 +83,7 @@ export async function createGuestOrder(req: AuthRequest, res: Response): Promise
   const { recipientName, recipientPhone, shippingAddressLine1, shippingCity, shippingProvince, note, items } = req.body;
 
   const order = new Order();
+  order.items = [];
   order.orderCode = generateOrderCode();
   order.recipientName = recipientName;
   order.recipientPhone = recipientPhone;

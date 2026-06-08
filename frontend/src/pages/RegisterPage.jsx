@@ -3,7 +3,7 @@
 // =====================================================
 
 import { useState } from "react";
-import { apiCompleteRegister, apiResendOtp } from "../utils/api";
+import { apiRegister, apiCompleteRegister, apiResendOtp } from "../utils/api";
 
 const RegisterPage = ({ onLogin, navigate }) => {
   const [step, setStep] = useState(1);
@@ -29,6 +29,10 @@ const RegisterPage = ({ onLogin, navigate }) => {
     if (!fullName || !email || !password || !confirm) {
       setError("Vui lòng điền đầy đủ thông tin."); return;
     }
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phone && phoneDigits.length !== 10) {
+      setError("Số điện thoại phải gồm đúng 10 chữ số."); return;
+    }
     if (password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự."); return;
     }
@@ -38,7 +42,23 @@ const RegisterPage = ({ onLogin, navigate }) => {
 
     setLoading(true);
     try {
-      await apiCompleteRegister(fullName, email, phone, password, otp);
+      await apiRegister(fullName, email, phone, password, confirm);
+      setStep(2);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setError("");
+    if (otp.length !== 6) {
+      setError("Vui lòng nhập đầy đủ mã OTP 6 số."); return;
+    }
+    setLoading(true);
+    try {
+      await apiCompleteRegister(form.fullName, form.email, form.phone, form.password, otp);
       setSuccessMsg("Đăng ký thành công!");
       setTimeout(() => navigate("login"), 1500);
     } catch (err) {
@@ -288,7 +308,7 @@ const RegisterPage = ({ onLogin, navigate }) => {
             <button
               className="btn-primary"
               style={{ width: "100%", padding: "16px 0", fontSize: 16, marginBottom: 12 }}
-              onClick={handleSubmitStep1}
+              onClick={handleVerifyOtp}
               disabled={loading || otp.length !== 6}
             >
               {loading ? (

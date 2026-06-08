@@ -389,7 +389,7 @@ export const isAdmin = () => {
   if (!userStr) return false;
   try {
     const user = JSON.parse(userStr);
-    return user.role === "admin";
+    return user.role?.toUpperCase() === "ADMIN";
   } catch {
     return false;
   }

@@ -30,7 +30,7 @@ const LoginPage = ({ onLogin, navigate }) => {
 
       const userData = {
         email: data.username || form.email,
-        role: data.role ? data.role.toLowerCase() : "user",
+        role: data.role ? data.role.replace(/^ROLE_/, "").toLowerCase() : "user",
         token: data.token,
         name: data.fullName || data.name || data.username?.split('@')[0] || "",
         phone: data.phone || "",
@@ -39,7 +39,7 @@ const LoginPage = ({ onLogin, navigate }) => {
       localStorage.setItem("user", JSON.stringify(userData));
       onLogin(userData);
 
-      if (userData.role === "admin") {
+      if (userData.role?.toUpperCase() === "ADMIN") {
         navigate("admin-dashboard");
       } else {
         navigate("home");

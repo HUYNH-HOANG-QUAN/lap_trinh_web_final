@@ -22,7 +22,7 @@ const Reviews = ({ productId, user, onReviewAdded }) => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Check if current user is admin
-  const isAdmin = user && user.role === "admin";
+  const isAdmin = user && user.role?.toUpperCase() === "ADMIN";
 
   // Load reviews
   useEffect(() => {

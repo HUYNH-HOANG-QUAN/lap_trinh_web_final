@@ -237,7 +237,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
             </button>
 
             {/* Admin */}
-            {user.role === "admin" && (
+            {user.role?.toUpperCase() === "ADMIN" && (
               <button
                 type="button"
                 onClick={() => navigate("admin-dashboard")}
@@ -306,7 +306,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
             >
               <span>👤</span>
               <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user.name || "Người dùng"}
+                {user.fullName || user.name || "Người dùng"}
               </span>
             </button>
 

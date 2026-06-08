@@ -1,7 +1,7 @@
 import axios from "axios";
 import { buildCategoryList, mapProductFromApi } from "../utils/productHelpers";
 
-const API_PREFIX = "/api/v1";
+const API_PREFIX = "/api/public";
 
 export const getProductsFromApi = async (params = {}) => {
   const response = await axios.get(`${API_PREFIX}/products`, { params });
