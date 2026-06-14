@@ -4,6 +4,11 @@ import { Message } from "../entity/Message";
 import { User } from "../entity/User";
 import { AuthRequest } from "../middleware/auth";
 
+function parseId(param: string | undefined): number | null {
+  const n = parseInt(param ?? "", 10);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
 export async function getMyMessages(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const messageRepo = AppDataSource.getRepository(Message);
@@ -64,8 +69,10 @@ export async function getAllMessages(req: AuthRequest, res: Response): Promise<v
 
 export async function getMessage(req: AuthRequest, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
   const message = await messageRepo.findOne({
-    where: { id: parseInt(req.params.id) },
+    where: { id },
     relations: ["user"],
   });
   if (!message) {
@@ -77,7 +84,9 @@ export async function getMessage(req: AuthRequest, res: Response): Promise<void>
 
 export async function replyMessage(req: AuthRequest, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
-  const message = await messageRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
+  const message = await messageRepo.findOne({ where: { id } });
   if (!message) {
     res.status(404).json({ error: "Message not found" });
     return;
@@ -94,7 +103,9 @@ export async function replyMessage(req: AuthRequest, res: Response): Promise<voi
 
 export async function markAsRead(req: AuthRequest, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
-  const message = await messageRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
+  const message = await messageRepo.findOne({ where: { id } });
   if (!message) {
     res.status(404).json({ error: "Message not found" });
     return;

@@ -7,6 +7,11 @@ import { User } from "../entity/User";
 import { AuthRequest } from "../middleware/auth";
 import { generateOrderCode } from "../utils/orderCode";
 
+function parseId(param: string | undefined): number | null {
+  const n = parseInt(param ?? "", 10);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
 export async function getMyOrders(req: AuthRequest, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const orders = await orderRepo
@@ -124,8 +129,11 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
   const orderRepo = AppDataSource.getRepository(Order);
   const productRepo = AppDataSource.getRepository(Product);
 
+  const orderId = parseId(req.params.id);
+  if (!orderId) { res.status(400).json({ error: "Invalid order ID" }); return; }
+
   const order = await orderRepo.findOne({
-    where: { id: parseInt(req.params.id) },
+    where: { id: orderId },
     relations: ["items"],
   });
 
@@ -174,7 +182,9 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
 
 export async function confirmBankingPayment(req: AuthRequest, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
-  const order = await orderRepo.findOne({ where: { id: parseInt(req.params.orderId) } });
+  const orderId = parseId(req.params.orderId);
+  if (!orderId) { res.status(400).json({ error: "Invalid order ID" }); return; }
+  const order = await orderRepo.findOne({ where: { id: orderId } });
 
   if (!order) {
     res.status(404).json({ error: "Order not found" });

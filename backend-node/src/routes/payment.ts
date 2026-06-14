@@ -4,9 +4,16 @@ import { Order } from "../entity/Order";
 import { config } from "../config/env";
 import { hmacSHA512, sortObject, buildQueryString, extractOrderCodeFromTxnRef } from "../config/vnpay";
 
+function parseId(param: string | undefined): number | null {
+  const n = parseInt(param ?? "", 10);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
 export async function createPaymentUrl(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
-  const order = await orderRepo.findOne({ where: { id: parseInt(req.params.orderId) } });
+  const orderId = parseId(req.params.orderId);
+  if (!orderId) { res.status(400).json({ error: "Invalid order ID" }); return; }
+  const order = await orderRepo.findOne({ where: { id: orderId } });
 
   if (!order) {
     res.status(404).json({ error: "Order not found" });

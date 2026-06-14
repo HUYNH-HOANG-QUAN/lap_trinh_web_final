@@ -6,7 +6,9 @@ import { ProductTagMap } from "../entity/ProductTagMap";
 import { ProductTag } from "../entity/ProductTag";
 
 export async function getProducts(req: Request, res: Response): Promise<void> {
-  const { categoryId, keyword, page = 0, size = 10 } = req.query;
+  const { categoryId, keyword, page, size } = req.query;
+  const pageNum = Math.max(0, Number(page) || 0);
+  const sizeNum = Math.max(1, Number(size) || 10);
   const productRepo = AppDataSource.getRepository(Product);
 
   const qb = productRepo
@@ -16,8 +18,11 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     .andWhere("p.deletedAt IS NULL");
 
   if (categoryId) {
-    qb.andWhere("p.categoryId = :categoryId", { categoryId: parseInt(categoryId as string) })
-      .andWhere("(c.isActive = true OR c.id IS NULL)");
+    const catId = Number(categoryId);
+    if (!isNaN(catId) && catId > 0) {
+      qb.andWhere("p.categoryId = :categoryId", { categoryId: catId })
+        .andWhere("(c.isActive = true OR c.id IS NULL)");
+    }
   }
 
   if (keyword) {
@@ -26,8 +31,8 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
 
   const total = await qb.getCount();
   const products = await qb
-    .skip(parseInt(page as string) * parseInt(size as string))
-    .take(parseInt(size as string))
+    .skip(pageNum * sizeNum)
+    .take(sizeNum)
     .orderBy("p.createdAt", "DESC")
     .getMany();
 
@@ -36,9 +41,9 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
   res.json({
     content: results,
     totalElements: total,
-    totalPages: Math.ceil(total / parseInt(size as string)),
-    size: parseInt(size as string),
-    number: parseInt(page as string),
+    totalPages: Math.ceil(total / sizeNum),
+    size: sizeNum,
+    number: pageNum,
   });
 }
 
@@ -46,10 +51,16 @@ export async function getProductById(req: Request, res: Response): Promise<void>
   const { id } = req.params;
   const productRepo = AppDataSource.getRepository(Product);
 
+  const productId = parseInt(id, 10);
+  if (isNaN(productId) || productId <= 0) {
+    res.status(400).json({ error: "Invalid product ID" });
+    return;
+  }
+
   const product = await productRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.category", "c")
-    .where("p.id = :id", { id: parseInt(id) })
+    .where("p.id = :id", { id: productId })
     .andWhere("p.isActive = true")
     .andWhere("p.deletedAt IS NULL")
     .getOne();

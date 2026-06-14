@@ -5,6 +5,11 @@ import { Product } from "../entity/Product";
 import { User } from "../entity/User";
 import { AuthRequest } from "../middleware/auth";
 
+function parseId(param: string | undefined): number | null {
+  const n = parseInt(param ?? "", 10);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
 export async function createReview(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const productRepo = AppDataSource.getRepository(Product);
@@ -47,8 +52,10 @@ export async function createReview(req: AuthRequest, res: Response): Promise<voi
 
 export async function getProductReviews(req: any, res: Response): Promise<void> {
   const reviewRepo = AppDataSource.getRepository(Review);
+  const productId = parseId(req.params.productId);
+  if (!productId) { res.status(400).json({ error: "Invalid product ID" }); return; }
   const reviews = await reviewRepo.find({
-    where: { productId: parseInt(req.params.productId) },
+    where: { productId },
     relations: ["user"],
     order: { createdAt: "DESC" },
   });
@@ -87,8 +94,8 @@ export async function updateReview(req: AuthRequest, res: Response): Promise<voi
     return;
   }
 
-  const review = await reviewRepo.findOne({ where: { id: parseInt(req.params.reviewId) } });
-  if (!review) {
+  const review = await reviewRepo.findOne({ where: { id: parseId(req.params.reviewId) ?? -1 } });
+  if (!review || review.id === -1) {
     res.status(404).json({ error: "Review not found" });
     return;
   }
@@ -119,8 +126,8 @@ export async function deleteReview(req: AuthRequest, res: Response): Promise<voi
     return;
   }
 
-  const review = await reviewRepo.findOne({ where: { id: parseInt(req.params.reviewId) } });
-  if (!review) {
+  const review = await reviewRepo.findOne({ where: { id: parseId(req.params.reviewId) ?? -1 } });
+  if (!review || review.id === -1) {
     res.status(404).json({ error: "Review not found" });
     return;
   }

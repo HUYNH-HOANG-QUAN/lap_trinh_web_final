@@ -8,6 +8,12 @@ import { OrderItem } from "../entity/OrderItem";
 import { AuthRequest } from "../middleware/auth";
 import bcryptjs from "bcryptjs";
 
+/** Parse param thành số nguyên, trả về null nếu không hợp lệ */
+function parseId(param: string | undefined): number | null {
+  const n = parseInt(param ?? "", 10);
+  return isNaN(n) || n <= 0 ? null : n;
+}
+
 // Users
 export async function getAllUsers(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
@@ -59,7 +65,9 @@ export async function createUser(req: AuthRequest, res: Response): Promise<void>
 
 export async function updateUser(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
-  const user = await userRepo.findOne({ where: { id: parseInt(req.params.id), deletedAt: null as any } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid user ID" }); return; }
+  const user = await userRepo.findOne({ where: { id, deletedAt: null as any } });
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
@@ -86,7 +94,9 @@ export async function updateUser(req: AuthRequest, res: Response): Promise<void>
 
 export async function deleteUser(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
-  const user = await userRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid user ID" }); return; }
+  const user = await userRepo.findOne({ where: { id } });
   if (!user) {
     res.status(404).json({ message: "User not found" });
     return;
@@ -133,7 +143,9 @@ export async function createCategory(req: AuthRequest, res: Response): Promise<v
 
 export async function updateCategory(req: AuthRequest, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
-  const category = await categoryRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid category ID" }); return; }
+  const category = await categoryRepo.findOne({ where: { id } });
   if (!category) {
     res.status(404).json({ message: "Category not found" });
     return;
@@ -158,7 +170,9 @@ export async function updateCategory(req: AuthRequest, res: Response): Promise<v
 
 export async function deleteCategory(req: AuthRequest, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
-  const category = await categoryRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid category ID" }); return; }
+  const category = await categoryRepo.findOne({ where: { id } });
   if (!category) {
     res.status(404).json({ message: "Category not found" });
     return;
@@ -221,7 +235,9 @@ export async function createProduct(req: AuthRequest, res: Response): Promise<vo
 
 export async function updateProduct(req: AuthRequest, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
-  const product = await productRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
+  const product = await productRepo.findOne({ where: { id } });
   if (!product) {
     res.status(404).json({ message: "Product not found" });
     return;
@@ -245,7 +261,9 @@ export async function updateProduct(req: AuthRequest, res: Response): Promise<vo
 
 export async function deleteProduct(req: AuthRequest, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
-  const product = await productRepo.findOne({ where: { id: parseInt(req.params.id) } });
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
+  const product = await productRepo.findOne({ where: { id } });
   if (!product) {
     res.status(404).json({ message: "Product not found" });
     return;
@@ -280,8 +298,10 @@ export async function getAllOrdersAdmin(req: AuthRequest, res: Response): Promis
 
 export async function getOrderByIdAdmin(req: AuthRequest, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
+  const id = parseId(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid order ID" }); return; }
   const order = await orderRepo.findOne({
-    where: { id: parseInt(req.params.id) },
+    where: { id },
     relations: ["user", "items"],
   });
   if (!order) {
