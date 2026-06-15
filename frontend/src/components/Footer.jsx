@@ -1,7 +1,6 @@
-// =====================================================
-// components/Footer.jsx – Footer Premium
-// =====================================================
+// components/Footer.jsx – Footer
 
+import { MapPin,Phone, Mail, AlarmClock, BookText, Camera, Play, MessageCircle, DollarSign} from 'lucide-react'
 const Footer = ({ navigate }) => {
   return (
     <footer>
@@ -20,7 +19,7 @@ const Footer = ({ navigate }) => {
             Đồng hành cùng hành trình chinh phục cơ thể của bạn.
           </p>
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            {["📘", "📸", "▶️", "💬"].map((icon, i) => (
+            {[<BookText></BookText>, <Camera></Camera>, <Play></Play>, <MessageCircle></MessageCircle>].map((icon, i) => (
               <div key={i} className="social-btn">{icon}</div>
             ))}
           </div>
@@ -54,10 +53,10 @@ const Footer = ({ navigate }) => {
         <div className="footer-col">
           <h4>Liên hệ</h4>
           <ul>
-            <li><button>📍 123 Nguyễn Trãi, Q.1, TP.HCM</button></li>
-            <li><button>📞 0901 234 567</button></li>
-            <li><button>✉️ hello@profit.vn</button></li>
-            <li><button>⏰ 8:00 — 22:00 mỗi ngày</button></li>
+            <li><button><MapPin></MapPin> 123 Nguyễn Trãi, Q.1, TP.HCM</button></li>
+            <li><button><Phone></Phone> 0901 234 567</button></li>
+            <li><button><Mail></Mail> hello@profit.vn</button></li>
+            <li><button><AlarmClock></AlarmClock> 8:00 — 22:00 mỗi ngày</button></li>
           </ul>
         </div>
       </div>
@@ -66,8 +65,8 @@ const Footer = ({ navigate }) => {
       <div className="footer-bottom">
         <p>© 2024 ProFit. Tất cả quyền được bảo lưu.</p>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 13, color: "var(--gray-dark)" }}>Thanh toán:</span>
-          {["💳", "🏦", "📱", "💵"].map((icon, i) => (
+          <span style={{ fontSize: 15, color: "var(--gray-dark)" }}>Thanh toán:</span>
+          {[<DollarSign></DollarSign>].map((icon, i) => (
             <div key={i} style={{
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.06)",

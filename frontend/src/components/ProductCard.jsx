@@ -1,10 +1,8 @@
-// =====================================================
 // components/ProductCard.jsx – Card hiển thị sản phẩm
 // Props:
 //   - product: object dữ liệu sản phẩm
 //   - onAddToCart: hàm thêm vào giỏ
 //   - onViewDetail: hàm xem chi tiết
-// =====================================================
 
 import { useEffect, useState } from "react";
 import { formatPrice, renderStars } from "../utils/productHelpers";

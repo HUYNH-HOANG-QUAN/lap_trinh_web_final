@@ -1,13 +1,12 @@
-// =====================================================
-// components/Navbar.jsx – Thanh điều hướng Premium
+// components/Navbar.jsx – Thanh điều hướng
 // Glass morphism, hover effects, gradient glow
-// =====================================================
 
 import { useState, useEffect } from "react";
+import {ShoppingCart, Settings, Clipboard, User} from 'lucide-react'
 
 const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  // const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -89,7 +88,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 onClick={() => navigate(item.page)}
                 style={{
                   background: isActive
-                    ? "linear-gradient(135deg, rgba(255,92,0,0.15), rgba(255,92,0,0.05))"
+                    ? "var(--dark2)"
                     : "transparent",
                   border: "none",
                   fontWeight: 700,
@@ -151,7 +150,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
           type="button"
           onClick={() => navigate("cart")}
           style={{
-            background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+            background: "var(--primary)",
             color: "var(--white)",
             border: "none",
             padding: "10px 22px",
@@ -168,14 +167,14 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 8px 28px rgba(255, 92, 0, 0.5)";
+            e.currentTarget.style.boxShadow = "0 8px 28px rgba(0, 92, 255, 0.5)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 16px rgba(255, 92, 0, 0.3)";
+            e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 92, 255, 0.3)";
           }}
         >
-          <span style={{ fontSize: 16 }}>🛒</span>
+          <ShoppingCart />
           <span>Giỏ hàng</span>
           {cartCount > 0 && (
             <span
@@ -190,7 +189,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 justifyContent: "center",
                 fontSize: 11,
                 fontWeight: 800,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                boxShadow: "0 2px 8px rgba(82, 49, 229, 0.3)",
               }}
             >
               {cartCount}
@@ -220,10 +219,10 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 fontFamily: "'Exo 2', sans-serif",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,92,0,0.4)";
-                e.currentTarget.style.background = "rgba(255,92,0,0.08)";
+                e.currentTarget.style.borderColor = "rgba(0,92,255,0.4)";
+                e.currentTarget.style.background = "rgba(0,92,255,0.08)";
                 e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,92,0,0.15)";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,92,255,0.15)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
@@ -232,7 +231,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <span>📋</span>
+              <Clipboard />
               <span>Lịch sử đơn hàng</span>
             </button>
 
@@ -242,9 +241,9 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 type="button"
                 onClick={() => navigate("admin-dashboard")}
                 style={{
-                  background: "rgba(255,92,0,0.1)",
-                  border: "1px solid rgba(255,92,0,0.25)",
-                  color: "var(--primary)",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "var(--white)",
                   padding: "9px 16px",
                   borderRadius: "var(--radius-lg)",
                   fontSize: 13,
@@ -257,17 +256,20 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                   gap: 6,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,92,0,0.18)";
+                  e.currentTarget.style.borderColor = "rgba(0,92,255,0.4)";
+                  e.currentTarget.style.background = "rgba(0,92,255,0.08)";
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,92,0,0.2)";
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,92,255,0.15)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,92,0,0.1)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                ⚙️ Admin
+                <Settings />
+                <span>Admin</span>
               </button>
             )}
 
@@ -292,8 +294,8 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 fontFamily: "'Exo 2', sans-serif",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,92,0,0.4)";
-                e.currentTarget.style.background = "rgba(255,92,0,0.08)";
+                e.currentTarget.style.borderColor = "rgba(0,92,255,0.4)";
+                e.currentTarget.style.background = "rgba(0,92,255,0.08)";
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,92,0,0.15)";
               }}
@@ -304,7 +306,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <span>👤</span>
+              <User />
               <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {user.name || "Người dùng"}
               </span>
@@ -345,7 +347,7 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
             type="button"
             onClick={() => navigate("login")}
             style={{
-              background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
+              background: "var(--primary)",
               color: "var(--white)",
               padding: "10px 24px",
               borderRadius: "50px",
@@ -360,11 +362,11 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = "0 8px 30px rgba(255, 92, 0, 0.5)";
+              e.currentTarget.style.boxShadow = "0 8px 30px rgba(0, 92, 255, 0.5)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 20px rgba(255, 92, 0, 0.35)";
+              e.currentTarget.style.boxShadow = "0 4px 20px rgba(0, 92, 255, 0.35)";
             }}
           >
             Đăng nhập

@@ -185,15 +185,15 @@ const ProductDetailPage = ({ product, onAddToCart, onViewDetail, navigate }) => 
             {/* Thông số */}
             <div className="detail-specs">
               <div className="spec-item">
-                <span>⚖️ Trọng lượng</span>
+                <span> Trọng lượng</span>
                 <strong>{product.weight}</strong>
               </div>
               <div className="spec-item">
-                <span>🥄 Khẩu phần</span>
+                <span> Khẩu phần</span>
                 <strong>{product.servings} lần dùng</strong>
               </div>
               <div className="spec-item">
-                <span>⭐ Đánh giá</span>
+                <span> Đánh giá</span>
                 <strong>{product.rating}/5</strong>
               </div>
             </div>
@@ -243,7 +243,7 @@ const ProductDetailPage = ({ product, onAddToCart, onViewDetail, navigate }) => 
                   navigate("cart");
                 }}
               >
-                🛒 Mua ngay
+                 Mua ngay
               </button>
               <button
                 className="btn-outline"

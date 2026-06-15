@@ -1,7 +1,5 @@
-// =====================================================
 // components/Reviews.jsx – Component hiển thị đánh giá sản phẩm
 // Props: productId, user
-// =====================================================
 
 import { useState, useEffect } from "react";
 import { Star, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";

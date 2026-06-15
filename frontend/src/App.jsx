@@ -1,4 +1,3 @@
-// =====================================================
 // App.jsx – Ứng dụng chính, quản lý routing và state toàn cục
 
 
@@ -7,9 +6,7 @@ import { useState, useEffect } from "react";
 import Navbar  from "./components/Navbar";
 import Footer  from "./components/Footer";
 import Toast   from "./components/Toast";
-import Particles from "./components/Particles";
 import BackButton from "./components/BackButton";
-import ChatWidget from "./components/ChatWidget";
 
 import HomePage          from "./pages/HomePage";
 import ProductListPage   from "./pages/ProductListPage";   
@@ -37,7 +34,7 @@ import "./styles/global.css";
 import { transformOrderFromBE } from "./utils/orderHelpers";
 
 const App = () => {
-  // ── Routing ──────────────────────────────────────
+  // ── Routing ───
   const [currentPage, setCurrentPage]         = useState("home");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedOrder, setSelectedOrder]     = useState(null);
@@ -389,8 +386,6 @@ const App = () => {
 
   return (
     <div>
-      <Particles />
-
       <BackButton goBack={goBack} canGoBack={canGoBack} />
 
       {/* [SỬA] Truyền thêm user + onLogout */}
@@ -407,9 +402,7 @@ const App = () => {
       {!isAdmin && <Footer navigate={navigate} />}
 
       <Toast message={toast.message} visible={toast.visible} />
-
-      {/* Chat Widget - Production Ready */}
-      <ChatWidget />
+      
     </div>
   );
 };

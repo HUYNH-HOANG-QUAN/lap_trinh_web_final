@@ -178,21 +178,14 @@ export const adminService = {
         return res.json();
     },
 
-    // ==========================================
     // DASHBOARD STATS API
-    // ==========================================
     getDashboardStats: async () => {
         const res = await fetch(`${ADMIN_API_URL}/dashboard/stats`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch dashboard stats');
         return res.json();
     },
 
-    // ==========================================
-    // MESSAGE (CONTACT INBOX) APIs
-    // ==========================================
-// ==========================================
 // MESSAGE APIs (Contact Inbox)
-// ==========================================
     /**
      * Lấy tất cả tin nhắn liên hệ
      * GET /api/messages/admin/all
@@ -236,10 +229,8 @@ export const adminService = {
         return res.json();
     },
 
-    // ==========================================
     // NOTIFICATION APIs
-    // ==========================================
-    /**
+    /*
      * Lấy tất cả thông báo chưa đọc cho admin
      * Bao gồm: tin nhắn liên hệ + đơn hàng chờ xác nhận
      */
