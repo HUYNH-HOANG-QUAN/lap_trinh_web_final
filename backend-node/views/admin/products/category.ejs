@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Categories — VitaStore Admin</title>
+  <link rel="stylesheet" href="/static/admin/css/style.css?v=1" />
+</head>
+<body>
+  <div class="admin-layout">
+    <%- include('../fragments/sidebar') %>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-info">
+          <div class="topbar-title">Categories</div>
+          <div class="topbar-breadcrumb">Quản lý danh mục</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" onclick="toggleLogoutDropdown()">⚙️</button>
+          <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+            <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-wrap">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Quản lý Categories</div>
+            <div class="page-subtitle">Danh mục sản phẩm</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAdd()">+ Thêm danh mục</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="toolbar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Tìm tên danh mục..." oninput="filterCats()" />
+              </div>
+            </div>
+            <span class="badge badge-info" id="catCount">—</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Name</th><th>Slug</th><th>Parent</th><th>Active</th><th>Actions</th></tr></thead>
+              <tbody id="catsBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="catModalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="catModalTitle">Thêm danh mục</div>
+        <button class="btn btn-ghost btn-icon" onclick="Modal.close('catModalOverlay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cId" />
+        <div class="form-group"><label class="form-label">Tên danh mục *</label><input class="form-control" id="cName" required /></div>
+        <div class="form-group"><label class="form-label">Slug *</label><input class="form-control" id="cSlug" required /></div>
+        <div class="form-group"><label class="form-label">Danh mục cha</label>
+          <select class="form-control" id="cParent"><option value="">— Không có —</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trạng thái</label>
+          <select class="form-control" id="cActive"><option value="true">● Active</option><option value="false">● Inactive</option></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="Modal.close('catModalOverlay')">Hủy</button>
+        <button class="btn btn-primary" id="cSaveBtn" onclick="saveCat()">💾 Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin/js/admin.js"></script>
+  <script>
+    let allCats = [];
+    let editCatId = null;
+
+    async function loadCats() {
+      try {
+        allCats = await API.getCategories();
+        const parentSel = document.getElementById('cParent');
+        parentSel.innerHTML = '<option value="">— Không có —</option>';
+        allCats.forEach(c => {
+          const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name; parentSel.appendChild(opt);
+        });
+        filterCats();
+      } catch(e) { console.error(e); }
+    }
+
+    function renderCats(list) {
+      document.getElementById('catCount').textContent = `${list.length} danh mục`;
+      document.getElementById('catsBody').innerHTML = list.length
+        ? list.map(c => `<tr>
+          <td class="td-mono">${c.id}</td>
+          <td><strong>${c.name}</strong></td>
+          <td class="td-mono">${c.slug}</td>
+          <td>${c.parentId || '—'}</td>
+          <td>${c.isActive ? '<span class="badge badge-success">● Active</span>' : '<span class="badge badge-danger">● Inactive</span>'}</td>
+          <td><div class="action-group">
+            <button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(c)})'>✏️ Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="confirmDelete(${c.id},'${c.name.replace(/'/g, "\\'")}')">🗑</button>
+          </div></td>
+        </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy</td></tr>`;
+    }
+
+    function filterCats() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      renderCats(allCats.filter(c => !q || c.name.toLowerCase().includes(q)));
+    }
+
+    function openAdd() {
+      editCatId = null;
+      document.getElementById('catModalTitle').textContent = 'Thêm danh mục mới';
+      ['cId','cName','cSlug'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('cParent').value = '';
+      document.getElementById('cActive').value = 'true';
+      Modal.open('catModalOverlay');
+    }
+
+    function openEdit(c) {
+      editCatId = c.id;
+      document.getElementById('catModalTitle').textContent = 'Chỉnh sửa danh mục';
+      document.getElementById('cId').value = c.id;
+      document.getElementById('cName').value = c.name;
+      document.getElementById('cSlug').value = c.slug;
+      document.getElementById('cParent').value = c.parentId || '';
+      document.getElementById('cActive').value = String(c.isActive);
+      Modal.open('catModalOverlay');
+    }
+
+    async function saveCat() {
+      const name = document.getElementById('cName').value.trim();
+      const slug = document.getElementById('cSlug').value.trim();
+      if (!name || !slug) { Utils.toast('Vui lòng nhập tên và slug!', 'error'); return; }
+      const btn = document.getElementById('cSaveBtn'); btn.disabled = true; btn.textContent = '⏳...';
+      const data = {
+        name, slug,
+        parentId: document.getElementById('cParent').value ? parseInt(document.getElementById('cParent').value) : null,
+        isActive: document.getElementById('cActive').value === 'true',
+      };
+      try {
+        if (editCatId) { await API.updateCategory(editCatId, data); Utils.toast('Đã cập nhật danh mục!'); }
+        else { await API.createCategory(data); Utils.toast('Đã thêm danh mục mới!'); }
+        await loadCats(); Modal.close('catModalOverlay');
+      } catch(e) { Utils.toast(e.message || 'Có lỗi', 'error'); }
+      finally { btn.disabled = false; btn.innerHTML = '💾 Lưu'; }
+    }
+
+    function confirmDelete(id, name) {
+      DeleteConfirm.show(`"${name}"`, async () => {
+        try { await API.deleteCategory(id); await loadCats(); Utils.toast(`Đã xóa "${name}"`); }
+        catch(e) { Utils.toast(e.message, 'error'); }
+      });
+    }
+
+    setActiveNav('categories');
+    document.addEventListener('DOMContentLoaded', loadCats);
+  </script>
+</body>
+</html>
