@@ -2,14 +2,14 @@
 // pages/AboutPage.jsx – Giới thiệu Premium
 // =====================================================
 
-import { Target, Lightbulb, Handshake, Leaf } from "lucide-react";
+import { Target, Lightbulb, Handshake, Leaf, CalendarDays, ShoppingBag, Users, Trophy } from "lucide-react";
 
 const AboutPage = ({ navigate }) => {
   return (
     <div>
       {/* Tiêu đề */}
       <div className="page-hero">
-        <h1>VỀ <span>CHÚNG TÔI</span></h1>
+        <h1>VỀ CHÚNG TÔI</h1>
         <p>Hành trình xây dựng cộng đồng thể thao khỏe mạnh tại Việt Nam</p>
       </div>
 
@@ -29,7 +29,7 @@ const AboutPage = ({ navigate }) => {
               Câu chuyện của chúng tôi
             </div>
             <h2 className="section-title" style={{ fontSize: 44, marginBottom: 24 }}>
-              NƠI <span>TINH THẦN</span><br />ĐƯỢC NUÔI DƯỠNG
+              NƠI TINH THẦN<br />ĐƯỢC NUÔI DƯỠNG
             </h2>
             <p style={{ color: "var(--gray)", fontSize: 16, lineHeight: 1.8, marginBottom: 18 }}>
               ProFit được thành lập vào năm 2019 bởi những người yêu thể thao với mục tiêu
@@ -47,7 +47,7 @@ const AboutPage = ({ navigate }) => {
 
             <div style={{ marginTop: 36, display: "flex", gap: 16 }}>
               <button className="btn-primary" onClick={() => navigate("products")}>
-                🛍️ Khám phá sản phẩm
+                 Khám phá sản phẩm
               </button>
               <button className="btn-outline" onClick={() => navigate("contact")}>
                 Liên hệ ngay
@@ -101,10 +101,10 @@ const AboutPage = ({ navigate }) => {
       {/* ===== THỐNG KÊ ===== */}
       <div className="stats">
         {[
-          { number: "2019", label: "Năm thành lập", icon: "📅" },
-          { number: "500+", label: "Sản phẩm", icon: "🛍️" },
-          { number: "20K+", label: "Khách hàng", icon: "👥" },
-          { number: "50+", label: "Thương hiệu", icon: "🏆" },
+          { number: "2019", label: "Năm thành lập", icon: <CalendarDays /> },
+          { number: "500+", label: "Sản phẩm", icon: <ShoppingBag /> },
+          { number: "20K+", label: "Khách hàng", icon: <Users /> },
+          { number: "50+", label: "Thương hiệu", icon: <Trophy /> },
         ].map((s) => (
           <div className="stat-item" key={s.label}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
@@ -118,7 +118,7 @@ const AboutPage = ({ navigate }) => {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2 className="section-title">GIÁ TRỊ <span>CỐT LÕI</span></h2>
+            <h2 className="section-title">GIÁ TRỊ CỐT LÕI</h2>
             <p className="section-subtitle">Những nguyên tắc định hướng mọi quyết định của chúng tôi</p>
           </div>
         </div>

@@ -6,12 +6,7 @@
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 import CategoryCard from "../components/CategoryCard";
-import {
-  CheckCircle,
-  Truck,
-  RefreshCw,
-  MessageCircle,
-} from "lucide-react";
+import { CheckCircle,Truck,RefreshCw,MessageCircle,Zap,Lock,Check,ShoppingBag,Users,Trophy} from "lucide-react";
 import { getProductUiData } from "../services/productService";
 import { renderStars } from "../utils/productHelpers";
 
@@ -44,10 +39,10 @@ const testimonials = [
 ];
 
 const stats = [
-  { number: "500+", label: "Sản phẩm", icon: "🛍️" },
-  { number: "20K+", label: "Khách hàng", icon: "👥" },
-  { number: "50+", label: "Thương hiệu", icon: "🏆" },
-  { number: "100%", label: "Chính hãng", icon: "✓" },
+  { number: "500+", label: "Sản phẩm", icon: <ShoppingBag /> },
+  { number: "20K+", label: "Khách hàng", icon: <Users /> },
+  { number: "50+", label: "Thương hiệu", icon: <Trophy /> },
+  { number: "100%", label: "Chính hãng", icon: <Check /> },
 ];
 
 const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
@@ -100,7 +95,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
         <div className="hero-text">
           {/* Animated badge */}
           <div className="hero-badge">
-            <span style={{ fontSize: 16 }}>⚡</span>
+            <span style={{ fontSize: 16 }}><Zap /></span>
             Chính hãng 100% — Nhập khẩu trực tiếp
           </div>
 
@@ -110,7 +105,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
             <br />
             CƠ THỂ
             <br />
-            <span>CỦA BẠN</span>
+            CỦA BẠN
           </h1>
 
           <p className="hero-desc">
@@ -125,7 +120,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
               style={{ padding: "16px 36px", fontSize: 16 }}
               onClick={() => navigate("products")}
             >
-              🛍️ Mua ngay
+               Mua ngay
             </button>
             <button
               className="btn-outline"
@@ -144,9 +139,9 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
             flexWrap: "wrap",
           }}>
             {[
-              { icon: "🔒", text: "Thanh toán an toàn" },
-              { icon: "🚚", text: "Giao hàng nhanh" },
-              { icon: "✓", text: "Cam kết chính hãng" },
+              { icon: <Lock />, text: "Thanh toán an toàn" },
+              { icon: <Truck />, text: "Giao hàng nhanh" },
+              { icon: <Check />, text: "Cam kết chính hãng" },
             ].map((b) => (
               <div key={b.text} style={{
                 display: "flex",
@@ -192,11 +187,6 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
             animation: "heroFloat 3s ease-in-out infinite",
             boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
           }}>
-            <span style={{ fontSize: 28 }}>💪</span>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: "var(--white)" }}>Giao hàng</div>
-              <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 700 }}>Miễn phí ≥500K</div>
-            </div>
           </div>
         </div>
       </section>
@@ -216,7 +206,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2 className="section-title">DANH MỤC <span>NỔI BẬT</span></h2>
+            <h2 className="section-title">DANH MỤC NỔI BẬT</h2>
             <p className="section-subtitle">Chọn danh mục phù hợp với mục tiêu của bạn</p>
           </div>
           <span className="see-all" onClick={() => navigate("products")}>
@@ -239,7 +229,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="section-header">
           <div>
-            <h2 className="section-title">SẢN PHẨM <span>BÁN CHẠY</span></h2>
+            <h2 className="section-title">SẢN PHẨM BÁN CHẠY</h2>
             <p className="section-subtitle">Top sản phẩm được khách hàng tin dùng nhất</p>
           </div>
           <span className="see-all" onClick={() => navigate("products")}>
@@ -276,7 +266,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="section-header">
           <div>
-            <h2 className="section-title">TẠI SAO CHỌN <span>CHÚNG TÔI?</span></h2>
+            <h2 className="section-title">TẠI SAO CHỌN CHÚNG TÔI?</h2>
             <p className="section-subtitle">Cam kết về chất lượng và dịch vụ</p>
           </div>
         </div>
@@ -316,7 +306,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="section-header">
           <div>
-            <h2 className="section-title">KHÁCH HÀNG <span>NÓI GÌ?</span></h2>
+            <h2 className="section-title">KHÁCH HÀNG NÓI GÌ?</h2>
             <p className="section-subtitle">Hơn 20,000 khách hàng đã tin tưởng ProFit</p>
           </div>
         </div>
@@ -380,7 +370,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
             position: "relative",
             zIndex: 1,
           }}>
-            SẴN SÀNG <span style={{ color: "var(--primary)" }}>BẮT ĐẦU?</span>
+            SẴN SÀNG BẮT ĐẦU?
           </h2>
           <p style={{
             fontSize: 16,
@@ -396,7 +386,7 @@ const HomePage = ({ navigate, onAddToCart, onViewDetail }) => {
           </p>
           <div style={{ display: "flex", gap: 16, justifyContent: "center", position: "relative", zIndex: 1 }}>
             <button className="btn-primary" style={{ padding: "16px 40px", fontSize: 16 }} onClick={() => navigate("products")}>
-              🛍️ Mua sắm ngay
+              Mua sắm ngay
             </button>
             <button className="btn-outline" style={{ padding: "16px 40px", fontSize: 16 }} onClick={() => navigate("about")}>
               Tìm hiểu thêm

@@ -18,6 +18,7 @@ export async function getMyOrders(req: AuthRequest, res: Response): Promise<void
     .createQueryBuilder("o")
     .leftJoinAndSelect("o.user", "u")
     .leftJoinAndSelect("o.items", "i")
+    .leftJoinAndSelect("i.product", "p")
     .where("u.email = :email", { email: req.user!.email })
     .orderBy("o.createdAt", "DESC")
     .getMany();
@@ -219,12 +220,15 @@ function mapOrderResponse(order: Order): any {
     shippingCity: order.shippingCity,
     shippingProvince: order.shippingProvince,
     totalAmount: order.totalAmount,
+    subtotal: order.subtotal,
+    shippingFee: order.shippingFee,
     status: order.status,
     paymentStatus: order.paymentStatus,
     placedAt: order.placedAt,
     paidAt: order.paidAt,
     deliveredAt: order.deliveredAt,
     completedAt: order.completedAt,
+    note: order.note,
     userName: order.user?.fullName || null,
     items: (order.items || []).map((i: OrderItem) => ({
       id: i.id,
@@ -234,6 +238,14 @@ function mapOrderResponse(order: Order): any {
       quantity: i.quantity,
       unitPrice: i.unitPrice,
       lineTotal: i.lineTotal,
+      // Thêm thông tin chi tiết sản phẩm nếu có join
+      product: i.product ? {
+        id: i.product.id,
+        name: i.product.name,
+        sku: i.product.sku,
+        price: i.product.price,
+        shortDescription: i.product.shortDescription,
+      } : null,
     })),
   };
 }

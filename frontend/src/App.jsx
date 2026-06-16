@@ -22,7 +22,6 @@ import RegisterPage      from "./pages/RegisterPage";
 import ProfilePage       from "./pages/ProfilePage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import BankingQRPage    from "./pages/BankingQRPage";
 
 import DashboardPage     from "./pages/admin/DashboardPage";
 import ProductManagePage from "./pages/admin/ProductManagePage";
@@ -32,13 +31,13 @@ import ContactInboxPage  from "./pages/admin/ContactInboxPage";
 
 import "./styles/global.css";
 import { transformOrderFromBE } from "./utils/orderHelpers";
+import { apiGetMyOrders, isLoggedIn } from "./utils/api";
 
 const App = () => {
   // ── Routing ───
   const [currentPage, setCurrentPage]         = useState("home");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedOrder, setSelectedOrder]     = useState(null);
-  const [pendingBankingOrder, setPendingBankingOrder] = useState(null); // Đơn hàng đang chờ thanh toán banking
 
   // Detect URL path on mount (for direct navigation via redirect links)
   useEffect(() => {
@@ -49,8 +48,6 @@ const App = () => {
       setCurrentPage("payment-result");
     } else if (path === "/reset-password" || path.startsWith("/reset-password")) {
       setCurrentPage("reset-password");
-    } else if (path === "/banking-qr") {
-      setCurrentPage("banking-qr");
     } else if (path === "/login") {
       setCurrentPage("login");
     } else if (path === "/register") {
@@ -81,20 +78,27 @@ const App = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // ── Giỏ hàng (Persistent - Lưu vào localStorage) ─────
+  // ── Giỏ hàng (Persistent - Lưu vào localStorage riêng theo user) ─────
   const [cart, setCart] = useState(() => {
     try {
-      const saved = localStorage.getItem("cart");
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem("user");
+      const key = saved ? `cart_${JSON.parse(saved).email}` : "cart";
+      const savedCart = localStorage.getItem(key);
+      return savedCart ? JSON.parse(savedCart) : [];
     } catch {
       return [];
     }
   });
 
-  // Sync cart với localStorage mỗi khi thay đổi
+  // Sync cart với localStorage CHỈ khi cart thay đổi (KHÔNG phụ thuộc vào user)
+  // Lý do: nếu để [cart, user], khi user đổi thì effect này chạy trước effect [user],
+  // dẫn đến ghi đè cart=[] vào key mới TRƯỚC khi effect [user] kịp đọc lại từ localStorage.
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
+    try {
+      const key = user ? `cart_${user.email}` : "cart";
+      localStorage.setItem(key, JSON.stringify(cart));
+    } catch {}
+  }, [cart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync user với localStorage mỗi khi thay đổi
   useEffect(() => {
@@ -105,37 +109,34 @@ const App = () => {
     }
   }, [user]);
 
-  // ── [MỚI] Đơn hàng ───────────────────────────────
-  const [orders, setOrders] = useState(() => {
+  // ── Đơn hàng – fetch từ API (không dùng localStorage) ────────────────
+  const [orders, setOrders] = useState([]);
+
+  // Hàm fetch orders từ API (chỉ khi đã đăng nhập)
+  const fetchMyOrders = async () => {
+    if (!user) { setOrders([]); return; }
     try {
-      const saved = localStorage.getItem("orders");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+      const data = await apiGetMyOrders();
+      setOrders(Array.isArray(data) ? data.map(transformOrderFromBE) : []);
+    } catch (err) {
+      console.error("Không thể tải đơn hàng:", err);
+      setOrders([]);
     }
-  });
+  };
 
-  // Lấy đơn banking từ localStorage khi cần
-  const [currentBankingOrder, setCurrentBankingOrder] = useState(() => {
+  // Khi đăng nhập/logout: load đúng cart của user + fetch orders từ API
+  useEffect(() => {
+    // Load giỏ hàng đúng theo user
     try {
-      const saved = localStorage.getItem("pendingBankingOrder");
-      return saved ? JSON.parse(saved) : null;
+      const cartKey = user ? `cart_${user.email}` : "cart";
+      const savedCart = localStorage.getItem(cartKey);
+      setCart(savedCart ? JSON.parse(savedCart) : []);
     } catch {
-      return null;
+      setCart([]);
     }
-  });
-
-  // Sync orders với localStorage
-  useEffect(() => {
-    localStorage.setItem("orders", JSON.stringify(orders));
-  }, [orders]);
-
-  // Sync pendingBankingOrder với localStorage
-  useEffect(() => {
-    if (currentBankingOrder) {
-      localStorage.setItem("pendingBankingOrder", JSON.stringify(currentBankingOrder));
-    }
-  }, [currentBankingOrder]);
+    // Fetch orders từ API
+    fetchMyOrders();
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Toast ─────────────────────────────────────────
   const [toast, setToast] = useState({ visible: false, message: "" });
@@ -191,16 +192,17 @@ const App = () => {
     showToast("🗑 Đã xóa sản phẩm khỏi giỏ hàng");
   };
 
-  // [MỚI] Đặt hàng thành công: xóa giỏ, lưu đơn
+  // Đặt hàng thành công: xóa giỏ, reload orders từ API
   const handlePlaceOrder = (order) => {
-    // order từ CheckoutPage đã là FE-format (có info, total, subtotal...)
-    // nên KHÔNG cần transform lại
-    setOrders((prev) => [...prev, order]);
     setCart([]);
+    // Reload orders từ API để đảm bảo dữ liệu chính xác
+    if (user) {
+      fetchMyOrders();
+    }
     showToast("🎉 Đặt hàng thành công!");
   };
 
-  // [MỚI] Admin cập nhật trạng thái đơn
+  // Admin cập nhật trạng thái đơn
   const handleUpdateOrderStatus = (orderId, newStatus) => {
     setOrders((prev) =>
       prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o)
@@ -219,8 +221,6 @@ const App = () => {
     setOrders([]);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("cart");
-    localStorage.removeItem("orders");
     navigate("home");
     showToast("Đã đăng xuất.");
   };
@@ -313,10 +313,11 @@ const App = () => {
       case "orders":
         return (
           <OrderPage
-            key={orders.length + Date.now()}
             user={user}
             navigate={navigate}
             onViewOrderDetail={handleViewOrder}
+            orders={orders}
+            onRefresh={fetchMyOrders}
           />
         );
 
@@ -343,17 +344,6 @@ const App = () => {
 
       case "reset-password":
         return <ResetPasswordPage showToast={showToast} />;
-
-      case "banking-qr": {
-        // LUÔN đọc order mới nhất từ localStorage
-        const pendingOrder = (() => {
-          try {
-            const saved = localStorage.getItem("pendingBankingOrder");
-            return saved ? JSON.parse(saved) : null;
-          } catch { return null; }
-        })();
-        return <BankingQRPage order={pendingOrder} navigate={navigate} showToast={showToast} onPlaceOrder={handlePlaceOrder} onClearCart={() => setCart([])} />;
-      }
 
       // ── Admin (guard quyền) ───────────────────────
       case "admin-dashboard":

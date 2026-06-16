@@ -131,68 +131,82 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
               >
                 SẢN PHẨM ĐÃ ĐẶT
               </h3>
-              {safeOrder.items.map((item) => (
-                <div
-                  key={item.product.id}
-                  style={{
-                    display: "flex",
-                    gap: 16,
-                    padding: "14px 0",
-                    borderBottom: "1px solid #2a2a2a",
-                    alignItems: "center",
-                  }}
-                >
+              {(safeOrder.items || []).map((item, idx) => {
+                // Hỗ trợ cả data từ API (productName, quantity) và data cũ (product object)
+                const productName = item.productName || item.product?.name || "Sản phẩm";
+                const productSku = item.productSku || item.product?.sku || "";
+                const qty = item.quantity || item.qty || 1;
+                const unitPrice = item.unitPrice ?? item.product?.price ?? 0;
+                const lineTotal = item.lineTotal ?? (unitPrice * qty);
+                const emoji = item.product?.emoji || "🏋️";
+                const productId = item.productId || item.product?.id || idx;
+
+                return (
                   <div
+                    key={productId}
                     style={{
-                      fontSize: 52,
-                      background: "var(--dark3)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
+                      display: "flex",
+                      gap: 16,
+                      padding: "14px 0",
+                      borderBottom: "1px solid #2a2a2a",
+                      alignItems: "center",
                     }}
                   >
-                    {item.product.emoji}
-                  </div>
-                  <div style={{ flex: 1 }}>
                     <div
                       style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: "var(--white)",
-                        marginBottom: 4,
+                        fontSize: 52,
+                        background: "var(--dark3)",
+                        borderRadius: 12,
+                        padding: "8px 12px",
+                        flexShrink: 0,
                       }}
                     >
-                      {item.product.name}
+                      {emoji}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "var(--white)",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {productName}
+                      </div>
+                      {productSku && (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--primary)",
+                            fontWeight: 700,
+                          }}
+                        >
+                          SKU: {productSku}
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "var(--gray)",
+                          marginTop: 4,
+                        }}
+                      >
+                        {formatPrice(unitPrice)} × {qty}
+                      </div>
                     </div>
                     <div
                       style={{
-                        fontSize: 12,
+                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontSize: 22,
                         color: "var(--primary)",
-                        fontWeight: 700,
                       }}
                     >
-                      {item.product.brand}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "var(--gray)",
-                        marginTop: 4,
-                      }}
-                    >
-                      {formatPrice(item.product.price)} × {item.qty}
+                      {formatPrice(lineTotal)}
                     </div>
                   </div>
-                  <div
-                    style={{
-                      fontFamily: "'Bebas Neue', sans-serif",
-                      fontSize: 22,
-                      color: "var(--primary)",
-                    }}
-                  >
-                    {formatPrice(item.product.price * item.qty)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Thông tin giao hàng */}
@@ -272,32 +286,32 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
 
             <div className="summary-row">
               <span>Tạm tính</span>
-              <span>{formatPrice(safeOrder.subtotal)}</span>
+              <span>{formatPrice(safeOrder.subtotal || safeOrder.total || 0)}</span>
             </div>
             <div className="summary-row">
               <span>Phí vận chuyển</span>
               <span
                 style={{
-                  color: safeOrder.shipping === 0 ? "var(--green)" : "inherit",
+                  color: (safeOrder.shipping ?? safeOrder.shippingFee) === 0 ? "var(--green)" : "inherit",
                 }}
               >
-                {safeOrder.shipping === 0
+                {(safeOrder.shipping ?? safeOrder.shippingFee) === 0
                   ? "Miễn phí"
-                  : formatPrice(safeOrder.shipping)}
+                  : formatPrice(safeOrder.shipping ?? safeOrder.shippingFee ?? 0)}
               </span>
             </div>
-            {safeOrder.discount > 0 && (
+            {(safeOrder.discount ?? safeOrder.discountAmount ?? 0) > 0 && (
               <div className="summary-row">
                 <span>Giảm giá</span>
                 <span style={{ color: "var(--green)" }}>
-                  - {formatPrice(safeOrder.discount)}
+                  - {formatPrice(safeOrder.discount ?? safeOrder.discountAmount)}
                 </span>
               </div>
             )}
             <div className="summary-divider"></div>
             <div className="summary-row summary-total">
               <span>Tổng cộng</span>
-              <span>{formatPrice(safeOrder.total)}</span>
+              <span>{formatPrice(safeOrder.total || safeOrder.totalAmount || 0)}</span>
             </div>
 
             <button
@@ -312,9 +326,14 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
                 className="btn-primary"
                 style={{ width: "100%", padding: "12px 0", marginTop: 10 }}
                 onClick={() => {
-                  safeOrder.items.forEach((item) => {
-                    if (item.product && item.product.id) {
-                      onAddToCart(item.product);
+                  (safeOrder.items || []).forEach((item) => {
+                    const productObj = item.product || {
+                      id: item.productId,
+                      name: item.productName,
+                      price: item.unitPrice,
+                    };
+                    if (productObj && productObj.id) {
+                      onAddToCart(productObj);
                     }
                   });
                   navigate("cart");

@@ -70,7 +70,7 @@ const ProductListPage = ({ onAddToCart, onViewDetail, initialCategoryId }) => {
     <div>
       {/* Tiêu đề */}
       <div className="page-hero">
-        <h1>TẤT CẢ <span>SẢN PHẨM</span></h1>
+        <h1>TẤT CẢ SẢN PHẨM</h1>
         <p>Hơn 165 sản phẩm chính hãng từ các thương hiệu hàng đầu thế giới</p>
       </div>
 

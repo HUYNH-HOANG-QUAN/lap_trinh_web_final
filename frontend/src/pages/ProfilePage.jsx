@@ -4,6 +4,7 @@
 // =====================================================
 
 import { useEffect, useState } from "react";
+import { User } from "lucide-react";
 
 const DEFAULT_USER_INFO = {
   fullName: "",
@@ -70,14 +71,14 @@ const ProfilePage = ({ navigate, user }) => {
     <div>
       <div className="page-hero">
         <h1>
-          THÔNG TIN <span>CÁ NHÂN</span>
+          THÔNG TIN CÁ NHÂN
         </h1>
         <p>Lưu thông tin để lần sau đặt hàng không cần nhập lại</p>
       </div>
 
       <section className="section">
         <div className="checkout-card" style={{ maxWidth: 860, margin: "0 auto" }}>
-          <h3 className="checkout-card-title">👤 Hồ sơ giao hàng</h3>
+          <h3 className="checkout-card-title"><User></User> Hồ sơ giao hàng</h3>
 
           <div className="form-row">
             <div className="form-group">

@@ -3,6 +3,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, LabelList
 } from "recharts";
+import { CircleDollarSign, Calendar1, CalendarDays, TrendingUp,
+  Package, Check, Hourglass, ChartColumn, 
+  ShoppingCart, Users, MessageCircle, Tag } from "lucide-react";
 import { adminService } from "../../services/adminService";
 
 const formatPrice = (price) => {
@@ -155,7 +158,7 @@ const DashboardPage = ({ navigate }) => {
           onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255, 92, 0, 0.3)"}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 26 }}>💬</span>
+            <span style={{ fontSize: 26 }}><MessageCircle></MessageCircle></span>
             <div>
               <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: 15 }}>Tin nhắn liên hệ mới</div>
               <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 2 }}>
@@ -194,7 +197,7 @@ const DashboardPage = ({ navigate }) => {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, letterSpacing: 2, margin: 0 }}>
-          BẢNG ĐIỀU KHIỂN <span style={{ color: "var(--primary)" }}>QUẢN TRỊ</span>
+          BẢNG ĐIỀU KHIỂN QUẢN TRỊ
         </h2>
         <div style={{ fontSize: 12, color: "var(--gray)" }}>
           Cập nhật: {new Date().toLocaleString("vi-VN")}
@@ -213,7 +216,7 @@ const DashboardPage = ({ navigate }) => {
             position: "absolute", top: -20, right: -20, width: 80, height: 80,
             background: "rgba(255, 92, 0, 0.08)", borderRadius: "50%"
           }} />
-          <div style={{ fontSize: 32, marginBottom: 8 }}>💰</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><CircleDollarSign></CircleDollarSign></div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Tổng Doanh Thu</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--primary)", lineHeight: 1 }}>
             {formatPrice(stats?.totalRevenue)}
@@ -233,7 +236,7 @@ const DashboardPage = ({ navigate }) => {
             position: "absolute", top: -20, right: -20, width: 80, height: 80,
             background: "rgba(59, 130, 246, 0.08)", borderRadius: "50%"
           }} />
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><CalendarDays></CalendarDays></div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Doanh Thu Tháng</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--blue)", lineHeight: 1 }}>
             {formatPrice(stats?.monthRevenue)}
@@ -253,7 +256,7 @@ const DashboardPage = ({ navigate }) => {
             position: "absolute", top: -20, right: -20, width: 80, height: 80,
             background: "rgba(16, 185, 129, 0.08)", borderRadius: "50%"
           }} />
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📆</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><Calendar1></Calendar1></div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Doanh Thu Tuần</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--green)", lineHeight: 1 }}>
             {formatPrice(stats?.todayRevenue)}
@@ -276,7 +279,7 @@ const DashboardPage = ({ navigate }) => {
             position: "absolute", top: -20, right: -20, width: 80, height: 80,
             background: "rgba(139, 92, 246, 0.08)", borderRadius: "50%"
           }} />
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><TrendingUp></TrendingUp></div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Doanh Thu Năm</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--purple)", lineHeight: 1 }}>
             {formatPrice(stats?.yearRevenue)}
@@ -338,7 +341,7 @@ const DashboardPage = ({ navigate }) => {
               display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", height: 280, color: "var(--gray)"
             }}>
-              <span style={{ fontSize: 48, opacity: 0.3 }}>📊</span>
+              <span style={{ fontSize: 48, opacity: 0.3 }}><ChartColumn></ChartColumn></span>
               <p style={{ marginTop: 12, fontSize: 14 }}>Chưa có dữ liệu doanh thu</p>
               <p style={{ fontSize: 12, opacity: 0.6 }}>Doanh thu sẽ hiển thị khi có đơn hàng hoàn thành</p>
             </div>
@@ -410,10 +413,10 @@ const DashboardPage = ({ navigate }) => {
               TỔNG QUAN ĐƠN HÀNG
             </h4>
             {[
-              { icon: "📦", label: "Tổng đơn hàng", value: stats?.totalOrders || 0, color: "var(--gray)" },
-              { icon: "✅", label: "Hoàn thành", value: stats?.completedOrders || 0, color: "var(--green)" },
-              { icon: "⏳", label: "Chờ xác nhận", value: stats?.pendingOrders || 0, color: "var(--amber)" },
-              { icon: "📅", label: "Hôm nay", value: stats?.todayOrders || 0, color: "var(--blue)" },
+              { icon: <Package />, label: "Tổng đơn hàng", value: stats?.totalOrders || 0, color: "var(--gray)" },
+              { icon: <Check />, label: "Hoàn thành", value: stats?.completedOrders || 0, color: "var(--green)" },
+              { icon: <Hourglass/>, label: "Chờ xác nhận", value: stats?.pendingOrders || 0, color: "var(--amber)" },
+              { icon: <Calendar1 />, label: "Hôm nay", value: stats?.todayOrders || 0, color: "var(--blue)" },
             ].map(item => (
               <div key={item.label} style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -439,10 +442,10 @@ const DashboardPage = ({ navigate }) => {
               TRUY CẬP NHANH
             </h4>
             {[
-              { icon: "📦", label: "Quản lý sản phẩm", page: "admin-products", desc: "CRUD sản phẩm" },
-              { icon: "🛒", label: "Quản lý đơn hàng", page: "admin-orders", desc: "Xử lý đơn hàng" },
-              { icon: "👥", label: "Quản lý User", page: "admin-users", desc: "Người dùng" },
-              { icon: "💬", label: "Hộp thư liên hệ", page: "admin-contact", desc: "Tin nhắn", badge: unreadMessageCount },
+              { icon: <Package />, label: "Quản lý sản phẩm", page: "admin-products", desc: "CRUD sản phẩm" },
+              { icon: <ShoppingCart />, label: "Quản lý đơn hàng", page: "admin-orders", desc: "Xử lý đơn hàng" },
+              { icon: <Users />, label: "Quản lý User", page: "admin-users", desc: "Người dùng" },
+              { icon: <MessageCircle />, label: "Hộp thư liên hệ", page: "admin-contact", desc: "Tin nhắn", badge: unreadMessageCount },
             ].map(item => (
               <div key={item.label} onClick={() => navigate(item.page)}
                 style={{
@@ -497,7 +500,7 @@ const DashboardPage = ({ navigate }) => {
               display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", height: 260, color: "var(--gray)"
             }}>
-              <span style={{ fontSize: 48, opacity: 0.3 }}>🏷️</span>
+              <span style={{ fontSize: 48, opacity: 0.3 }}> <Tag/></span>
               <p style={{ marginTop: 12, fontSize: 14 }}>Chưa có dữ liệu sản phẩm</p>
             </div>
           ) : (
@@ -562,7 +565,7 @@ const DashboardPage = ({ navigate }) => {
               display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", height: 260, color: "var(--gray)"
             }}>
-              <span style={{ fontSize: 48, opacity: 0.3 }}>🛒</span>
+              <span style={{ fontSize: 48, opacity: 0.3 }}> <ShoppingCart/></span>
               <p style={{ marginTop: 12, fontSize: 14 }}>Chưa có đơn hàng nào</p>
             </div>
           ) : (

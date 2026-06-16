@@ -3,6 +3,7 @@
 // =====================================================
 
 import { useState, useEffect, useRef } from "react";
+import { MapPin, Phone, Mail, AlarmClock , Mailbox, MessageSquare, Repeat, Check} from "lucide-react";
 import { apiSendMessage, apiGetMyMessages, isLoggedIn } from "../utils/api";
 
 const ContactPage = ({ navigate, showToast, user }) => {
@@ -136,7 +137,7 @@ const ContactPage = ({ navigate, showToast, user }) => {
   return (
     <div>
       <div className="page-hero">
-        <h1>LIÊN <span>HỆ</span></h1>
+        <h1>LIÊN HỆ</h1>
         <p>Đội ngũ ProFit luôn sẵn sàng hỗ trợ bạn 24/7</p>
       </div>
 
@@ -158,9 +159,9 @@ const ContactPage = ({ navigate, showToast, user }) => {
             {contactItems.map((item) => (
               <div key={item.label} className="contact-item">
                 <div className="contact-icon" style={{ fontSize: 18 }}>
-                  {item.label === "Địa chỉ" ? "📍" :
-                   item.label === "Điện thoại" ? "📞" :
-                   item.label === "Email" ? "✉️" : "⏰"}
+                  {item.label === "Địa chỉ" ? <MapPin /> :
+                   item.label === "Điện thoại" ? <Phone /> :
+                   item.label === "Email" ? <Mail /> : <AlarmClock />}
                 </div>
                 <div>
                   <div className="contact-label">{item.label}</div>
@@ -185,7 +186,7 @@ const ContactPage = ({ navigate, showToast, user }) => {
                     border: "1px solid rgba(255,92,0,0.2)",
                     flexShrink: 0,
                   }}>
-                    <span style={{ fontSize: 22 }}>📬</span>
+                    <Mailbox />
                   </div>
                   <div>
                     <h3 style={{
@@ -215,7 +216,9 @@ const ContactPage = ({ navigate, showToast, user }) => {
                     padding: "40px 24px",
                     textAlign: "center",
                   }}>
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>
+                      <MessageSquare />
+                    </div>
                     <p style={{ color: "var(--gray)", fontSize: 14, marginBottom: 6 }}>
                       Bạn chưa có tin nhắn nào
                     </p>
@@ -377,7 +380,7 @@ const ContactPage = ({ navigate, showToast, user }) => {
                     e.currentTarget.style.color = "var(--gray)";
                   }}
                 >
-                  🔄 Làm mới
+                  <Repeat></Repeat> Làm mới
                 </button>
               </div>
             ) : null}
@@ -387,7 +390,7 @@ const ContactPage = ({ navigate, showToast, user }) => {
           <div className="contact-form">
             {submitted ? (
               <div style={{ textAlign: "center", padding: "60px 0" }}>
-                <div style={{ fontSize: 72, marginBottom: 20 }}>✅</div>
+                <div style={{ fontSize: 72, marginBottom: 20 }}><Check/></div>
                 <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: "var(--white)", marginBottom: 12 }}>
                   GỬI THÀNH CÔNG!
                 </h3>

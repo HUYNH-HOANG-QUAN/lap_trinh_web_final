@@ -29,8 +29,8 @@ const Navbar = ({ currentPage, navigate, cartCount, user, onLogout }) => {
         justifyContent: "space-between",
         padding: scrolled ? "12px 60px" : "16px 60px",
         background: scrolled
-          ? "rgba(7, 9, 15, 0.92)"
-          : "rgba(7, 9, 15, 0.8)",
+          ? "rgba(11, 16, 30, 0.92)"
+          : "rgba(11, 16, 30, 0.8)",
         backdropFilter: "blur(20px) saturate(180%)",
         WebkitBackdropFilter: "blur(20px) saturate(180%)",
         position: "sticky",

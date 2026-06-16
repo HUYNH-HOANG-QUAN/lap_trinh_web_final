@@ -6,8 +6,8 @@
 import { useState, useEffect } from "react";
 import { formatPrice } from "../utils/productHelpers";
 import { transformOrderFromBE } from "../utils/orderHelpers";
-import { Package, Inbox, RefreshCw, Loader2 } from "lucide-react";
-import { apiGetMyOrders, isLoggedIn } from "../utils/api";
+import { Package, Inbox, Loader2, RefreshCw } from "lucide-react";
+import { isLoggedIn } from "../utils/api";
 
 // Nhãn trạng thái đơn hàng
 const STATUS_LABEL = {
@@ -42,58 +42,27 @@ const formatDate = (dateStr) => {
 // (remove the local transformOrderFromBE function from OrderPage.jsx)
 // The shared transformOrderFromBE from ../utils/orderHelpers is now used instead
 
-const OrderPage = ({ navigate, onViewOrderDetail, user }) => {
+const OrderPage = ({ navigate, onViewOrderDetail, user, orders, onRefresh }) => {
   const [filter, setFilter] = useState("all");
-  const [orders, setOrders] = useState([]);
-  const [localOrders, setLocalOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Load orders từ BE khi user đã đăng nhập
+  // Load đơn hàng đã sẵn sàng từ props
   useEffect(() => {
-    const fetchOrders = async () => {
-      // Luôn load local orders trước (đơn đặt offline)
-      const savedLocal = localStorage.getItem("localOrders");
-      if (savedLocal) {
-        try {
-          setLocalOrders(JSON.parse(savedLocal));
-        } catch {
-          setLocalOrders([]);
-        }
-      }
-
-      // Nếu chưa đăng nhập, chỉ hiển thị local orders
-      if (!isLoggedIn()) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const beOrders = await apiGetMyOrders();
-        const transformed = (beOrders || []).map(transformOrderFromBE);
-        setOrders(transformed);
-      } catch (err) {
-        console.error("Lỗi khi lấy đơn hàng:", err);
-        setError(err.message);
-        // Vẫn hiển thị local orders nếu API lỗi
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
+    setLoading(false);
   }, []);
 
-  // Kết hợp orders từ BE và local orders
-  const allOrders = [
-    ...orders,
-    ...localOrders.filter(
-      (lo) => !orders.some((ro) => ro.orderCode === lo.orderCode),
-    ),
-  ];
+  const handleRefresh = async () => {
+    if (!onRefresh || refreshing) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const allOrders = orders || [];
 
   // Sort theo ngày mới nhất
   const sortedOrders = [...allOrders].sort((a, b) => {
@@ -118,7 +87,7 @@ const OrderPage = ({ navigate, onViewOrderDetail, user }) => {
       <div className="section">
         <div className="page-hero">
           <h1>
-            ĐƠN HÀNG <span>CỦA TÔI</span>
+            ĐƠN HÀNG CỦA TÔI
           </h1>
         </div>
         <div className="empty-state">
@@ -129,27 +98,41 @@ const OrderPage = ({ navigate, onViewOrderDetail, user }) => {
     );
   }
 
+  if (!isLoggedIn()) {
+    return (
+      <div className="section">
+        <div className="page-hero">
+          <h1>ĐƠN HÀNG CỦA TÔI</h1>
+        </div>
+        <div className="empty-state">
+          <div className="empty-icon"><Package size={64} color="var(--primary)" /></div>
+          <h3>Vui lòng đăng nhập</h3>
+          <p>Đăng nhập để xem lịch sử đơn hàng của bạn.</p>
+          <button className="btn-primary" onClick={() => navigate("login")}>Đăng nhập ngay</button>
+        </div>
+      </div>
+    );
+  }
+
   if (sortedOrders.length === 0) {
     return (
       <div className="section">
         <div className="page-hero">
-          <h1>
-            ĐƠN HÀNG <span>CỦA TÔI</span>
-          </h1>
+          <h1>ĐƠN HÀNG CỦA TÔI</h1>
         </div>
         <div className="empty-state">
-          <div className="empty-icon">
-            <Package size={64} color="var(--primary)" />
-          </div>
+          <div className="empty-icon"><Package size={64} color="var(--primary)" /></div>
           <h3>Chưa có đơn hàng nào</h3>
-          <p>
-            {isLoggedIn()
-              ? "Hãy mua sắm và theo dõi đơn hàng của bạn tại đây."
-              : "Đăng nhập để xem đơn hàng của bạn."}
-          </p>
-          <button className="btn-primary" onClick={() => navigate("products")}>
-            Mua sắm ngay
-          </button>
+          <p>Hãy mua sắm và theo dõi đơn hàng của bạn tại đây.</p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button className="btn-primary" onClick={() => navigate("products")}>Mua sắm ngay</button>
+            {onRefresh && (
+              <button className="btn-outline" onClick={handleRefresh} disabled={refreshing}>
+                {refreshing ? <Loader2 size={16} className="spinning" /> : <RefreshCw size={16} />}
+                {refreshing ? " Đang tải..." : " Làm mới"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -158,46 +141,34 @@ const OrderPage = ({ navigate, onViewOrderDetail, user }) => {
   return (
     <div>
       <div className="page-hero">
-        <h1>
-          ĐƠN HÀNG <span>CỦA TÔI</span>
-        </h1>
-        <p>{sortedOrders.length} đơn hàng</p>
+        <h1>ĐƠN HÀNG CỦA TÔI</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "center", marginTop: 8 }}>
+          <p>{sortedOrders.length} đơn hàng</p>
+          {onRefresh && (
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(255,92,0,0.4)",
+                borderRadius: 8,
+                padding: "6px 12px",
+                color: "var(--primary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 13,
+              }}
+            >
+              {refreshing ? <Loader2 size={14} className="spinning" /> : <RefreshCw size={14} />}
+              {refreshing ? "Đang tải..." : "Làm mới"}
+            </button>
+          )}
+        </div>
       </div>
 
       <section className="section">
-        {/* Error banner nếu có */}
-        {error && (
-          <div
-            style={{
-              background: "rgba(239, 68, 68, 0.1)",
-              border: "1px solid var(--red)",
-              borderRadius: 8,
-              padding: "12px 16px",
-              marginBottom: 20,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              color: "var(--red)",
-            }}
-          >
-            <RefreshCw size={18} />
-            <span>{error} - Hiển thị đơn hàng đã lưu cục bộ.</span>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                marginLeft: "auto",
-                background: "var(--red)",
-                color: "white",
-                border: "none",
-                padding: "6px 12px",
-                borderRadius: 4,
-                cursor: "pointer",
-              }}
-            >
-              Thử lại
-            </button>
-          </div>
-        )}
 
         {/* Filter tabs */}
         <div className="order-tabs">
