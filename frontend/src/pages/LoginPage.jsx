@@ -127,10 +127,6 @@ const LoginPage = ({ onLogin, navigate }) => {
           </p>
         </div>
 
-        {/* Demo hint */}
-        <div className="demo-hint">
-          Demo: <strong style={{ color: "var(--primary)" }}>admin@profit.com</strong> / <strong style={{ color: "var(--primary)" }}>Admin@123</strong>
-        </div>
 
         {/* Form */}
         <div style={{ marginBottom: 20 }}>
@@ -140,7 +136,6 @@ const LoginPage = ({ onLogin, navigate }) => {
               type="email"
               name="email"
               placeholder="email@example.com"
-              value={form.email}
               onChange={handleChange}
               style={inputStyle}
             />
@@ -153,7 +148,6 @@ const LoginPage = ({ onLogin, navigate }) => {
                 type={showPass ? "text" : "password"}
                 name="password"
                 placeholder="••••••••"
-                value={form.password}
                 onChange={handleChange}
                 style={(focused) => inputStyle(focused, { paddingRight: 48 })}
               />
