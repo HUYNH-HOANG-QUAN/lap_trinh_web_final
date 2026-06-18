@@ -26,8 +26,8 @@ export async function login(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (user.status === UserStatus.LOCKED) {
-    res.status(403).json({ message: "Tai khoan da bi khoa." });
+  if (user.status !== UserStatus.ACTIVE) {
+    res.status(403).json({ message: "Tai khoan da bi khoa hoac khong kich hoat." });
     return;
   }
 

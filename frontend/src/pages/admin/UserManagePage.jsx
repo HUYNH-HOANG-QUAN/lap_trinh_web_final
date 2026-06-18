@@ -4,6 +4,7 @@ import { adminService } from "../../services/adminService";
 const UserManagePage = ({ showToast, navigate }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
 
   // States cho Form Thêm/Sửa User
   const [showModal, setShowModal] = useState(false);
@@ -15,11 +16,22 @@ const UserManagePage = ({ showToast, navigate }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Gọi API lấy danh sách
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 0) => {
     try {
       setLoading(true);
-      const data = await adminService.getAllUsers();
-      setUsers(data);
+      const data = await adminService.getAllUsers(page, pagination.size);
+      // Handle both array and paginated response
+      if (data.content) {
+        setUsers(data.content);
+        setPagination({
+          page: data.number,
+          size: data.size,
+          totalElements: data.totalElements,
+          totalPages: data.totalPages
+        });
+      } else {
+        setUsers(data);
+      }
     } catch (error) {
       showToast(`❌ Lỗi tải danh sách User: ${error.message}`);
     } finally {
@@ -92,15 +104,21 @@ const UserManagePage = ({ showToast, navigate }) => {
     setShowModal(true);
   };
 
-  // Gọi API Xóa
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc muốn xóa user này không?")) return;
+  // Gọi API khoá/mở khoá
+  const handleToggleLock = async (user) => {
+    const newStatus = user.status === "ACTIVE" ? "LOCKED" : "ACTIVE";
+    const confirmMsg = newStatus === "LOCKED" 
+      ? "Bạn có chắc muốn khoá user này không?" 
+      : "Bạn có chắc muốn mở khoá user này không?";
+      
+    if (!window.confirm(confirmMsg)) return;
+    
     try {
-      await adminService.deleteUser(id);
-      showToast("✅ Đã xóa user thành công!");
-      fetchUsers(); // Lấy lại danh sách mới sau khi xóa
+      await adminService.updateUser(user.id, { status: newStatus });
+      showToast(`✅ Đã ${newStatus === "LOCKED" ? "khoá" : "mở khoá"} user thành công!`);
+      fetchUsers(); // Lấy lại danh sách mới
     } catch (error) {
-      showToast(`❌ Lỗi khi xóa: ${error.message}`);
+      showToast(`❌ Lỗi khi ${newStatus === "LOCKED" ? "khoá" : "mở khoá"}: ${error.message}`);
     }
   };
 
@@ -128,44 +146,89 @@ const UserManagePage = ({ showToast, navigate }) => {
         ) : users.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--gray)", padding: "40px 0" }}>Chưa có người dùng nào.</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
-                  <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>ID</th>
-                  <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>HỌ TÊN</th>
-                  <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>EMAIL</th>
-                  <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>SĐT</th>
-                  <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>VAI TRÒ</th>
-                  <th style={{ padding: "12px", textAlign: "right", color: "var(--gray)", fontWeight: 700 }}>THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                    <td style={{ padding: "16px 12px", color: "var(--white)", fontWeight: 700 }}>#{u.id}</td>
-                    <td style={{ padding: "16px 12px", color: "var(--white)" }}>{u.fullName || "—"}</td>
-                    <td style={{ padding: "16px 12px", color: "var(--gray)" }}>{u.email}</td>
-                    <td style={{ padding: "16px 12px", color: "var(--gray)" }}>{u.phone || "—"}</td>
-                    <td style={{ padding: "16px 12px" }}>
-                      <span style={{ 
-                        padding: "4px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700,
-                        background: u.role === "ADMIN" ? "rgba(245, 158, 11, 0.15)" : "rgba(59, 130, 246, 0.15)",
-                        color: u.role === "ADMIN" ? "#f59e0b" : "#3b82f6",
-                        border: `1px solid ${u.role === "ADMIN" ? "#f59e0b" : "#3b82f6"}`
-                      }}>
-                        {u.role || "USER"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "16px 12px", textAlign: "right" }}>
-                      <button onClick={() => handleOpenEdit(u)} style={{ background: "transparent", border: "none", color: "var(--primary)", cursor: "pointer", marginRight: 16, fontWeight: 700 }}>Sửa</button>
-                      <button onClick={() => handleDelete(u.id)} style={{ background: "transparent", border: "none", color: "var(--red)", cursor: "pointer", fontWeight: 700 }}>Xóa</button>
-                    </td>
+          <>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>ID</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>HỌ TÊN</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>EMAIL</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>SĐT</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>VAI TRÒ</th>
+                    <th style={{ padding: "12px", textAlign: "left", color: "var(--gray)", fontWeight: 700 }}>TRẠNG THÁI</th>
+                    <th style={{ padding: "12px", textAlign: "right", color: "var(--gray)", fontWeight: 700 }}>THAO TÁC</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <td style={{ padding: "16px 12px", color: "var(--white)", fontWeight: 700 }}>#{u.id}</td>
+                      <td style={{ padding: "16px 12px", color: "var(--white)" }}>{u.fullName || "—"}</td>
+                      <td style={{ padding: "16px 12px", color: "var(--gray)" }}>{u.email}</td>
+                      <td style={{ padding: "16px 12px", color: "var(--gray)" }}>{u.phone || "—"}</td>
+                      <td style={{ padding: "16px 12px" }}>
+                        <span style={{ 
+                          padding: "4px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700,
+                          background: u.role === "ADMIN" ? "rgba(245, 158, 11, 0.15)" : "rgba(59, 130, 246, 0.15)",
+                          color: u.role === "ADMIN" ? "#f59e0b" : "#3b82f6",
+                          border: `1px solid ${u.role === "ADMIN" ? "#f59e0b" : "#3b82f6"}`
+                        }}>
+                          {u.role || "USER"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 12px" }}>
+                        <span style={{ 
+                          padding: "4px 10px", borderRadius: 4, fontSize: 12, fontWeight: 700,
+                          background: u.status === "ACTIVE" ? "rgba(34, 197, 94, 0.15)" : 
+                                      u.status === "LOCKED" ? "rgba(239, 68, 68, 0.15)" : 
+                                      "rgba(156, 163, 175, 0.15)",
+                          color: u.status === "ACTIVE" ? "#22c55e" : 
+                                 u.status === "LOCKED" ? "#ef4444" : 
+                                 "#9ca3af",
+                          border: `1px solid ${u.status === "ACTIVE" ? "#22c55e" : 
+                                              u.status === "LOCKED" ? "#ef4444" : 
+                                              "#9ca3af"}`
+                        }}>
+                          {u.status || "ACTIVE"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px 12px", textAlign: "right" }}>
+                      <button onClick={() => handleOpenEdit(u)} style={{ background: "transparent", border: "none", color: "var(--primary)", cursor: "pointer", marginRight: 16, fontWeight: 700 }}>Sửa</button>
+                      <button onClick={() => handleToggleLock(u)} style={{ background: "transparent", border: "none", color: u.status === "ACTIVE" ? "var(--red)" : "var(--green)", cursor: "pointer", fontWeight: 700 }}>
+                        {u.status === "ACTIVE" ? "Khoá" : "Mở khoá"}
+                      </button>
+                    </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {pagination.totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 24 }}>
+                <button 
+                  className="btn-outline" 
+                  disabled={pagination.page === 0} 
+                  onClick={() => fetchUsers(pagination.page - 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  ← Trước
+                </button>
+                <span style={{ color: "var(--gray)", fontSize: 14 }}>
+                  Trang {pagination.page + 1} / {pagination.totalPages}
+                </span>
+                <button 
+                  className="btn-outline" 
+                  disabled={pagination.page >= pagination.totalPages - 1} 
+                  onClick={() => fetchUsers(pagination.page + 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  Sau →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

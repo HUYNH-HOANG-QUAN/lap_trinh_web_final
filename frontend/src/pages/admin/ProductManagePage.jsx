@@ -15,20 +15,32 @@ const ProductManagePage = ({ showToast }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [pagination, setPagination] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
   
   const [showModal, setShowModal] = useState(false);
   const [editProductId, setEditProductId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (page = 0) => {
     try {
       setLoading(true);
       const [prodData, catData] = await Promise.all([
-        adminService.getAllProducts(),
+        adminService.getAllProducts(page, pagination.size),
         adminService.getAllCategories()
       ]);
-      setProducts(prodData);
+      // Handle both array and paginated response
+      if (prodData.content) {
+        setProducts(prodData.content);
+        setPagination({
+          page: prodData.number,
+          size: prodData.size,
+          totalElements: prodData.totalElements,
+          totalPages: prodData.totalPages
+        });
+      } else {
+        setProducts(prodData);
+      }
       setCategories(catData);
     } catch (error) {
       showToast(`❌ Lỗi tải dữ liệu: ${error.message}`);
@@ -123,42 +135,68 @@ const ProductManagePage = ({ showToast }) => {
         ) : filtered.length === 0 ? (
           <div style={{ padding: "40px 0", textAlign: "center", color: "var(--gray)" }}>Không có sản phẩm nào.</div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #2a2a2a", background: "var(--dark3)" }}>
-                {["Sản phẩm", "SKU", "Danh mục", "Giá", "Tồn kho", ""].map(h => (
-                  <th key={h} style={{ padding: "14px 16px", textAlign: "left", color: "var(--gray)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 2 }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--primary)" }}>Slug: {p.slug}</div>
-                  </td>
-                  <td style={{ padding: "14px 16px", color: "var(--gray)" }}>{p.sku}</td>
-                  <td style={{ padding: "14px 16px", color: "var(--gray)" }}>{p.categoryName || "—"}</td>
-                  <td style={{ padding: "14px 16px", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--primary)" }}>
-                    {formatPrice(p.price)}
-                    {p.oldPrice > 0 && <div style={{ fontSize: 12, textDecoration: "line-through", color: "var(--gray)", fontFamily: "Inter, sans-serif" }}>{formatPrice(p.oldPrice)}</div>}
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: p.stockQuantity > 0 ? "var(--green)" : "var(--red)" }}>
-                      {p.stockQuantity > 0 ? `Còn ${p.stockQuantity}` : "Hết hàng"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => openEdit(p)} style={{ background: "var(--dark3)", border: "1px solid #444", color: "var(--white)", padding: "6px 14px", borderRadius: 8, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Sửa</button>
-                      <button onClick={() => handleDelete(p.id)} className="btn-danger">Xóa</button>
-                    </div>
-                  </td>
+          <div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #2a2a2a", background: "var(--dark3)" }}>
+                  {["Sản phẩm", "SKU", "Danh mục", "Giá", "Tồn kho", ""].map(h => (
+                    <th key={h} style={{ padding: "14px 16px", textAlign: "left", color: "var(--gray)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ fontWeight: 700, color: "var(--white)", marginBottom: 2 }}>{p.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--primary)" }}>Slug: {p.slug}</div>
+                    </td>
+                    <td style={{ padding: "14px 16px", color: "var(--gray)" }}>{p.sku}</td>
+                    <td style={{ padding: "14px 16px", color: "var(--gray)" }}>{p.categoryName || "—"}</td>
+                    <td style={{ padding: "14px 16px", fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--primary)" }}>
+                      {formatPrice(p.price)}
+                      {p.oldPrice > 0 && <div style={{ fontSize: 12, textDecoration: "line-through", color: "var(--gray)", fontFamily: "Inter, sans-serif" }}>{formatPrice(p.oldPrice)}</div>}
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: p.stockQuantity > 0 ? "var(--green)" : "var(--red)" }}>
+                        {p.stockQuantity > 0 ? `Còn ${p.stockQuantity}` : "Hết hàng"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => openEdit(p)} style={{ background: "var(--dark3)", border: "1px solid #444", color: "var(--white)", padding: "6px 14px", borderRadius: 8, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Sửa</button>
+                        <button onClick={() => handleDelete(p.id)} className="btn-danger">Xóa</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 24, padding: "0 16px 16px" }}>
+                <button 
+                  className="btn-outline" 
+                  disabled={pagination.page === 0} 
+                  onClick={() => fetchData(pagination.page - 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  ← Trước
+                </button>
+                <span style={{ color: "var(--gray)", fontSize: 14 }}>
+                  Trang {pagination.page + 1} / {pagination.totalPages}
+                </span>
+                <button 
+                  className="btn-outline" 
+                  disabled={pagination.page >= pagination.totalPages - 1} 
+                  onClick={() => fetchData(pagination.page + 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  Sau →
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

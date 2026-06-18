@@ -7,9 +7,9 @@ export const adminService = {
      * Lấy danh sách tất cả người dùng
      * GET /admin/user/all
      */
-    getAllUsers: async () => {
+    getAllUsers: async (page = 0, size = 10) => {
         try {
-            const response = await fetch(`${ADMIN_API_URL}/user/all`, {
+            const response = await fetch(`${ADMIN_API_URL}/user/all?page=${page}&size=${size}`, {
                 method: 'GET',
                 headers: getDefaultHeaders(),
             });
@@ -123,8 +123,8 @@ export const adminService = {
     // ==========================================
     // PRODUCT APIs
     // ==========================================
-    getAllProducts: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/product/all`, { headers: getDefaultHeaders() });
+    getAllProducts: async (page = 0, size = 10) => {
+        const res = await fetch(`${ADMIN_API_URL}/product/all?page=${page}&size=${size}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch products');
         return res.json();
     },
@@ -158,8 +158,8 @@ export const adminService = {
     // ==========================================
     // ORDER APIs
     // ==========================================
-    getAllOrders: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/order/all`, { headers: getDefaultHeaders() });
+    getAllOrders: async (page = 0, size = 10) => {
+        const res = await fetch(`${ADMIN_API_URL}/order/all?page=${page}&size=${size}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch orders');
         return res.json();
     },
