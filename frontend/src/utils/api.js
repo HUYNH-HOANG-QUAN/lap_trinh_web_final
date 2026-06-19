@@ -2,7 +2,7 @@
 // utils/api.js – Các hàm gọi API tới Backend
 // =====================================================
 
-const API_BASE = "/api";
+import { API_BASE_URL as API_BASE } from "../services/apiConfig";
 
 // Lấy JWT token từ localStorage
 const getToken = () => localStorage.getItem("token");
@@ -139,7 +139,7 @@ export const apiConfirmPayment = async (orderId) => {
  * @returns {Promise<{paymentUrl: string}>} - URL thanh toán VNPay
  */
 export const apiCreatePayment = async (orderId) => {
-  const response = await fetch(`${API_BASE}/v1/payment/create/${orderId}`, {
+  const response = await fetch(`${API_BASE}/payment/create/${orderId}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -158,7 +158,7 @@ export const apiCreatePayment = async (orderId) => {
  * @returns {Promise} - Response từ server
  */
 export const apiConfirmBankingPayment = async (orderId) => {
-  const response = await fetch(`${API_BASE}/v1/banking/confirm/${orderId}`, {
+  const response = await fetch(`${API_BASE}/banking/confirm/${orderId}`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
@@ -176,7 +176,7 @@ export const apiConfirmBankingPayment = async (orderId) => {
  * @returns {Promise<{count: number}>} - Số lượng đơn chờ xác nhận
  */
 export const apiGetPendingConfirmCount = async () => {
-  const response = await fetch(`${API_BASE}/v1/banking/pending-count`, {
+  const response = await fetch(`${API_BASE}/banking/pending-count`, {
     method: "GET",
     headers: getAuthHeaders(),
   });

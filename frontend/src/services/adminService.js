@@ -191,21 +191,21 @@ export const adminService = {
      * GET /api/messages/admin/all
      */
     getAllMessages: async () => {
-        const res = await fetch(`${API_BASE_URL}/api/messages/admin/all`, {
+        const res = await fetch(`${API_BASE_URL}/messages/admin/all`, {
             headers: getDefaultHeaders()
         });
         if (!res.ok) throw new Error('Failed to fetch messages');
         return res.json();
     },
     getMessage: async (id) => {
-        const res = await fetch(`${API_BASE_URL}/api/messages/admin/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/messages/admin/${id}`, {
             headers: getDefaultHeaders()
         });
         if (!res.ok) throw new Error('Failed to fetch message');
         return res.json();
     },
     replyMessage: async (id, data) => {
-        const res = await fetch(`${API_BASE_URL}/api/messages/admin/${id}/reply`, {
+        const res = await fetch(`${API_BASE_URL}/messages/admin/${id}/reply`, {
             method: 'POST',
             headers: getDefaultHeaders(),
             body: JSON.stringify(data)
@@ -214,7 +214,7 @@ export const adminService = {
         return res.json();
     },
     markMessageRead: async (id) => {
-        const res = await fetch(`${API_BASE_URL}/api/messages/admin/${id}/read`, {
+        const res = await fetch(`${API_BASE_URL}/messages/admin/${id}/read`, {
             method: 'POST',
             headers: getDefaultHeaders()
         });
@@ -222,7 +222,7 @@ export const adminService = {
         return res.json();
     },
     getUnreadCount: async () => {
-        const res = await fetch(`${API_BASE_URL}/api/messages/admin/unread-count`, {
+        const res = await fetch(`${API_BASE_URL}/messages/admin/unread-count`, {
             headers: getDefaultHeaders()
         });
         if (!res.ok) throw new Error('Failed to get unread count');

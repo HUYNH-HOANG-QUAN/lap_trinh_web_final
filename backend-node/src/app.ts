@@ -34,18 +34,18 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // ============================================
 // Auth routes (public)
 // ============================================
-app.post("/api/auth/login", authRoutes.login);
-app.post("/api/auth/register", authRoutes.register);
-app.post("/api/auth/logout", authRoutes.logout);
-app.post("/api/auth/forgot-password", authRoutes.forgotPassword);
-app.post("/api/auth/reset-password", authRoutes.resetPassword);
+app.post("/api/v1/auth/login", authRoutes.login);
+app.post("/api/v1/auth/register", authRoutes.register);
+app.post("/api/v1/auth/logout", authRoutes.logout);
+app.post("/api/v1/auth/forgot-password", authRoutes.forgotPassword);
+app.post("/api/v1/auth/reset-password", authRoutes.resetPassword);
 
 // ============================================
 // Public product/category routes
 // ============================================
-app.get("/api/public/products", publicRoutes.getProducts);
-app.get("/api/public/products/:id", publicRoutes.getProductById);
-app.get("/api/public/categories", publicRoutes.getCategories);
+app.get("/api/v1/public/products", publicRoutes.getProducts);
+app.get("/api/v1/public/products/:id", publicRoutes.getProductById);
+app.get("/api/v1/public/categories", publicRoutes.getCategories);
 app.get("/api/v1/products", publicRoutes.getProducts);
 app.get("/api/v1/products/:id", publicRoutes.getProductById);
 app.get("/api/v1/categories", publicRoutes.getCategories);
@@ -53,37 +53,37 @@ app.get("/api/v1/categories", publicRoutes.getCategories);
 // ============================================
 // Authenticated user routes
 // ============================================
-app.get("/api/users/profile", authenticate, userRoutes.getProfile);
-app.put("/api/users/profile", authenticate, userRoutes.updateProfile);
+app.get("/api/v1/users/profile", authenticate, userRoutes.getProfile);
+app.put("/api/v1/users/profile", authenticate, userRoutes.updateProfile);
 
 // ============================================
 // Order routes
 // ============================================
-app.post("/api/orders/create", authenticate, orderRoutes.createOrder);
-app.post("/api/orders/guest", orderRoutes.createGuestOrder);
-app.get("/api/orders/my-orders", authenticate, orderRoutes.getMyOrders);
-app.put("/api/orders/:id/confirm-payment", authenticate, orderRoutes.confirmPayment);
-app.put("/api/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
+app.post("/api/v1/orders/create", authenticate, orderRoutes.createOrder);
+app.post("/api/v1/orders/guest", orderRoutes.createGuestOrder);
+app.get("/api/v1/orders/my-orders", authenticate, orderRoutes.getMyOrders);
+app.put("/api/v1/orders/:id/confirm-payment", authenticate, orderRoutes.confirmPayment);
+app.put("/api/v1/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
 
 // ============================================
 // Review routes
 // ============================================
-app.post("/api/reviews", authenticate, reviewRoutes.createReview);
-app.get("/api/reviews/product/:productId", reviewRoutes.getProductReviews as any);
-app.get("/api/reviews/my-reviews", authenticate, reviewRoutes.getMyReviews);
-app.put("/api/reviews/:reviewId", authenticate, reviewRoutes.updateReview);
-app.delete("/api/reviews/:reviewId", authenticate, reviewRoutes.deleteReview);
+app.post("/api/v1/reviews", authenticate, reviewRoutes.createReview);
+app.get("/api/v1/reviews/product/:productId", reviewRoutes.getProductReviews as any);
+app.get("/api/v1/reviews/my-reviews", authenticate, reviewRoutes.getMyReviews);
+app.put("/api/v1/reviews/:reviewId", authenticate, reviewRoutes.updateReview);
+app.delete("/api/v1/reviews/:reviewId", authenticate, reviewRoutes.deleteReview);
 
 // ============================================
 // Message routes
 // ============================================
-app.get("/api/messages/my", authenticate, messageRoutes.getMyMessages);
-app.post("/api/messages/send", authenticate, messageRoutes.sendMessage);
-app.get("/api/messages/admin/all", authenticate, requireAdmin, messageRoutes.getAllMessages);
-app.get("/api/messages/admin/:id", authenticate, requireAdmin, messageRoutes.getMessage);
-app.post("/api/messages/admin/:id/reply", authenticate, requireAdmin, messageRoutes.replyMessage);
-app.post("/api/messages/admin/:id/read", authenticate, requireAdmin, messageRoutes.markAsRead);
-app.get("/api/messages/admin/unread-count", authenticate, requireAdmin, messageRoutes.getUnreadCount);
+app.get("/api/v1/messages/my", authenticate, messageRoutes.getMyMessages);
+app.post("/api/v1/messages/send", authenticate, messageRoutes.sendMessage);
+app.get("/api/v1/messages/admin/all", authenticate, requireAdmin, messageRoutes.getAllMessages);
+app.get("/api/v1/messages/admin/:id", authenticate, requireAdmin, messageRoutes.getMessage);
+app.post("/api/v1/messages/admin/:id/reply", authenticate, requireAdmin, messageRoutes.replyMessage);
+app.post("/api/v1/messages/admin/:id/read", authenticate, requireAdmin, messageRoutes.markAsRead);
+app.get("/api/v1/messages/admin/unread-count", authenticate, requireAdmin, messageRoutes.getUnreadCount);
 
 // ============================================
 // Banking / payment
@@ -94,26 +94,26 @@ app.get("/api/v1/banking/pending-count", authenticate, orderRoutes.getPendingCon
 // ============================================
 // Admin routes (API endpoints)
 // ============================================
-app.get("/admin/user/all", authenticate, requireAdmin, adminRoutes.getAllUsers);
-app.post("/admin/user/add", authenticate, requireAdmin, adminRoutes.createUser);
-app.put("/admin/user/:id", authenticate, requireAdmin, adminRoutes.updateUser);
-app.delete("/admin/user/:id", authenticate, requireAdmin, adminRoutes.deleteUser);
+app.get("/api/v1/admin/user/all", authenticate, requireAdmin, adminRoutes.getAllUsers);
+app.post("/api/v1/admin/user/add", authenticate, requireAdmin, adminRoutes.createUser);
+app.put("/api/v1/admin/user/:id", authenticate, requireAdmin, adminRoutes.updateUser);
+app.delete("/api/v1/admin/user/:id", authenticate, requireAdmin, adminRoutes.deleteUser);
 
-app.get("/admin/category/all", authenticate, requireAdmin, adminRoutes.getAllCategoriesAdmin);
-app.post("/admin/category/add", authenticate, requireAdmin, adminRoutes.createCategory);
-app.put("/admin/category/:id", authenticate, requireAdmin, adminRoutes.updateCategory);
-app.delete("/admin/category/:id", authenticate, requireAdmin, adminRoutes.deleteCategory);
+app.get("/api/v1/admin/category/all", authenticate, requireAdmin, adminRoutes.getAllCategoriesAdmin);
+app.post("/api/v1/admin/category/add", authenticate, requireAdmin, adminRoutes.createCategory);
+app.put("/api/v1/admin/category/:id", authenticate, requireAdmin, adminRoutes.updateCategory);
+app.delete("/api/v1/admin/category/:id", authenticate, requireAdmin, adminRoutes.deleteCategory);
 
-app.get("/admin/product/all", authenticate, requireAdmin, adminRoutes.getAllProductsAdmin);
-app.post("/admin/product/add", authenticate, requireAdmin, adminRoutes.createProduct);
-app.put("/admin/product/:id", authenticate, requireAdmin, adminRoutes.updateProduct);
-app.delete("/admin/product/:id", authenticate, requireAdmin, adminRoutes.deleteProduct);
+app.get("/api/v1/admin/product/all", authenticate, requireAdmin, adminRoutes.getAllProductsAdmin);
+app.post("/api/v1/admin/product/add", authenticate, requireAdmin, adminRoutes.createProduct);
+app.put("/api/v1/admin/product/:id", authenticate, requireAdmin, adminRoutes.updateProduct);
+app.delete("/api/v1/admin/product/:id", authenticate, requireAdmin, adminRoutes.deleteProduct);
 
-app.get("/admin/order/all", authenticate, requireAdmin, adminRoutes.getAllOrdersAdmin);
-app.get("/admin/order/:id", authenticate, requireAdmin, adminRoutes.getOrderByIdAdmin);
-app.put("/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
+app.get("/api/v1/admin/order/all", authenticate, requireAdmin, adminRoutes.getAllOrdersAdmin);
+app.get("/api/v1/admin/order/:id", authenticate, requireAdmin, adminRoutes.getOrderByIdAdmin);
+app.put("/api/v1/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
 
-app.get("/admin/dashboard/stats", authenticate, requireAdmin, dashboardRoutes.getDashboardStats);
+app.get("/api/v1/admin/dashboard/stats", authenticate, requireAdmin, dashboardRoutes.getDashboardStats);
 
 // ============================================
 // Admin view routes (EJS templates)
