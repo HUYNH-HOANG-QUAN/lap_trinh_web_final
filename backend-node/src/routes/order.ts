@@ -14,16 +14,27 @@ function parseId(param: string | undefined): number | null {
 
 export async function getMyOrders(req: AuthRequest, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
-  const orders = await orderRepo
+  const page = parseInt(req.query.page as string) || 0;
+  const size = parseInt(req.query.size as string) || 10;
+  const [orders, totalElements] = await orderRepo
     .createQueryBuilder("o")
     .leftJoinAndSelect("o.user", "u")
     .leftJoinAndSelect("o.items", "i")
     .leftJoinAndSelect("i.product", "p")
     .where("u.email = :email", { email: req.user!.email })
     .orderBy("o.createdAt", "DESC")
-    .getMany();
+    .skip(page * size)
+    .take(size)
+    .getManyAndCount();
 
-  res.json(orders.map(mapOrderResponse));
+  const totalPages = Math.ceil(totalElements / size);
+  res.json({
+    content: orders.map(mapOrderResponse),
+    totalElements,
+    totalPages,
+    size,
+    number: page
+  });
 }
 
 export async function createOrder(req: AuthRequest, res: Response): Promise<void> {
@@ -52,7 +63,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<void
   order.shippingProvince = shippingProvince || "";
   order.note = note || "";
   order.status = "PENDING";
-  order.paymentStatus = "UNPAID";
+  order.paymentStatus = "PENDING_CONFIRM";
   order.paymentAttempts = 0;
   order.placedAt = new Date();
 
@@ -98,7 +109,7 @@ export async function createGuestOrder(req: AuthRequest, res: Response): Promise
   order.shippingProvince = shippingProvince || "";
   order.note = note || "";
   order.status = "PENDING";
-  order.paymentStatus = "UNPAID";
+  order.paymentStatus = "PENDING_CONFIRM";
   order.paymentAttempts = 0;
   order.placedAt = new Date();
 
@@ -145,9 +156,13 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
     return;
   }
 
-  const { status, paymentStatus } = req.body;
+  const { status } = req.body;
 
   if (status) {
+    if (status === "COMPLETED" && order.status !== "DELIVERED") {
+      res.status(400).json({ error: "Order must be delivered before completing" });
+      return;
+    }
     order.status = status;
 
     if (status === "COMPLETED") {
@@ -172,10 +187,39 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
     }
   }
 
-  if (paymentStatus) {
-    order.paymentStatus = paymentStatus;
-    if (paymentStatus === "PAID") {
-      order.status = "CONFIRMED";
+  await orderRepo.save(order);
+  res.json(mapOrderResponse(order));
+}
+
+export async function confirmPayment(req: AuthRequest, res: Response): Promise<void> {
+  const orderRepo = AppDataSource.getRepository(Order);
+  const productRepo = AppDataSource.getRepository(Product);
+
+  const orderId = parseId(req.params.id);
+  if (!orderId) { res.status(400).json({ error: "Invalid order ID" }); return; }
+
+  const order = await orderRepo.findOne({
+    where: { id: orderId },
+    relations: ["items"],
+  });
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  if (order.status !== "DELIVERED") {
+    res.status(400).json({ error: "Only delivered orders can be confirmed" });
+    return;
+  }
+
+  order.status = "COMPLETED";
+  order.completedAt = new Date();
+  for (const item of order.items) {
+    const product = await productRepo.findOne({ where: { id: item.productId } });
+    if (product) {
+      product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
+      await productRepo.save(product);
     }
   }
 

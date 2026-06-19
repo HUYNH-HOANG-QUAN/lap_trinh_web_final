@@ -7,19 +7,21 @@ import { useState, useEffect } from "react";
 import { formatPrice } from "../utils/productHelpers";
 import { transformOrderFromBE } from "../utils/orderHelpers";
 import { Package, Inbox, Loader2, RefreshCw } from "lucide-react";
-import { isLoggedIn } from "../utils/api";
+import { isLoggedIn, apiGetMyOrders, apiConfirmPayment } from "../utils/api";
 
 // Nhãn trạng thái đơn hàng
 const STATUS_LABEL = {
   PENDING:        { text: "Chờ xác nhận", color: "#f59e0b" },
-  CONFIRMED:      { text: "Đã xác nhận",  color: "var(--green)" },
+  CONFIRMED:      { text: "Đã xác nhận",  color: "#8b5cf6" },
+  DELIVERED:      { text: "Chờ thanh toán",  color: "#3b82f6" },
+  COMPLETED:      { text: "Hoàn thành",  color: "var(--green)" },
   CANCELLED:      { text: "Đã hủy",        color: "var(--red)" },
-  PENDING_CONFIRM: { text: "Chờ thanh toán", color: "#3b82f6" },
   // fallback lowercase
   pending:         { text: "Chờ xác nhận",  color: "#f59e0b" },
-  confirmed:        { text: "Đã xác nhận",   color: "var(--green)" },
+  confirmed:        { text: "Đã xác nhận",   color: "#8b5cf6" },
+  delivered:        { text: "Chờ thanh toán",   color: "#3b82f6" },
+  completed:        { text: "Hoàn thành",   color: "var(--green)" },
   cancelled:        { text: "Đã hủy",         color: "var(--red)" },
-  pending_confirm:  { text: "Chờ thanh toán", color: "#3b82f6" },
 };
 
 // Format ngày từ LocalDateTime của Java
@@ -42,21 +44,56 @@ const formatDate = (dateStr) => {
 // (remove the local transformOrderFromBE function from OrderPage.jsx)
 // The shared transformOrderFromBE from ../utils/orderHelpers is now used instead
 
-const OrderPage = ({ navigate, onViewOrderDetail, user, orders }) => {
+const OrderPage = ({ navigate, onViewOrderDetail, user, onConfirmPayment }) => {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
 
-  // Đơn hàng được quản lý bởi App.jsx, chỉ cần show loading ban đầu
+  const fetchOrders = async (page = 0) => {
+    try {
+      setLoading(true);
+      const data = await apiGetMyOrders(page, pagination.size);
+      // Handle both array and paginated response
+      const ordersArray = data.content ? data.content : data;
+      setOrders(ordersArray.map(transformOrderFromBE));
+      if (data.content) {
+        setPagination({
+          page: data.number,
+          size: data.size,
+          totalElements: data.totalElements,
+          totalPages: data.totalPages
+        });
+      }
+    } catch (err) {
+      console.error("Lỗi tải đơn hàng:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setLoading(false);
+    if (isLoggedIn()) {
+      fetchOrders();
+    }
   }, []);
 
   const handleRefresh = () => {
-    // Refresh không cần làm gì vì App.jsx đã quản lý state và localStorage
     if (refreshing) return;
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    fetchOrders(pagination.page).finally(() => {
+      setRefreshing(false);
+    });
+  };
+
+  const handleConfirmPayment = async (order) => {
+    try {
+      await onConfirmPayment(order);
+      fetchOrders(pagination.page);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Đảm bảo orders và các trường con luôn hợp lệ
@@ -76,9 +113,6 @@ const OrderPage = ({ navigate, onViewOrderDetail, user, orders }) => {
     filter === "all"
       ? sortedOrders
       : sortedOrders.filter((o) => {
-          if (filter === "pending_confirm") {
-            return (o.paymentStatus?.toLowerCase() === "pending_confirm") || (o.status?.toLowerCase() === "pending_confirm");
-          }
           return o.status?.toLowerCase() === filter.toLowerCase();
         });
 
@@ -168,8 +202,9 @@ const OrderPage = ({ navigate, onViewOrderDetail, user, orders }) => {
           {[
             { key: "all", label: "Tất cả" },
             { key: "pending", label: "Chờ xác nhận" },
-            { key: "pending_confirm", label: "Chờ thanh toán" },
             { key: "confirmed", label: "Đã xác nhận" },
+            { key: "delivered", label: "Chờ thanh toán" },
+            { key: "completed", label: "Hoàn thành" },
             { key: "cancelled", label: "Đã hủy" },
           ].map((tab) => (
             <button
@@ -191,144 +226,152 @@ const OrderPage = ({ navigate, onViewOrderDetail, user, orders }) => {
             <h3>Không có đơn hàng</h3>
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              marginTop: 24,
-            }}
-          >
-            {filtered.map((order) => {
-              // Hiển thị trạng thái thanh toán nếu là pending_confirm
-              const displayStatus = order.paymentStatus?.toLowerCase() === "pending_confirm" 
-                ? "pending_confirm" 
-                : order.status?.toLowerCase() || "pending";
+          <>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                marginTop: 24,
+              }}
+            >
+              {filtered.map((order) => {
+              // Hiển thị trạng thái dựa trên order.status
+              const displayStatus = order.status?.toLowerCase() || "pending";
               const st =
                 STATUS_LABEL[displayStatus] ??
                 STATUS_LABEL.pending;
-              return (
-                <div key={order.id || order.orderCode} className="order-card">
-                  {/* Header đơn */}
-                  <div className="order-card-header">
-                    <div>
-                      <span style={{ fontSize: 13, color: "var(--gray)" }}>
-                        Mã đơn:{" "}
-                      </span>
-                      <span
+                return (
+                  <div key={order.id || order.orderCode} className="order-card">
+                    {/* Header đơn */}
+                    <div className="order-card-header">
+                      <div>
+                        <span style={{ fontSize: 13, color: "var(--gray)" }}>
+                          Mã đơn:{" "}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "var(--white)",
+                          }}
+                        >
+                          {order.orderCode || `#${order.id}`}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--gray)" }}>
+                        {formatDate(order.placedAt || order.createdAt)}
+                      </div>
+                      <div
                         style={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: "var(--white)",
+                          color: st.color,
+                          padding: "4px 12px",
+                          borderRadius: 6,
+                          border: `1px solid ${st.color}`,
+                          textTransform: "uppercase",
                         }}
                       >
-                        {order.orderCode || `#${order.id}`}
-                      </span>
+                        {st.text}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: "var(--gray)" }}>
-                      {formatDate(order.placedAt || order.createdAt)}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: st.color,
-                        padding: "4px 12px",
-                        borderRadius: 6,
-                        border: `1px solid ${st.color}`,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {st.text}
-                    </div>
-                  </div>
 
-                  {/* Sản phẩm */}
-                  <div className="order-items-preview">
-                    {order.items.slice(0, 3).map((item, idx) => (
-                      <div
-                        key={item.id || item.productId || idx}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          padding: "10px 0",
-                          borderBottom:
-                            idx < Math.min(order.items.length, 3) - 1
-                              ? "1px solid #2a2a2a"
-                              : "none",
-                        }}
-                      >
-                        <span style={{ fontSize: 36 }}>
-                          {item.product?.emoji || "🏋️"}
-                        </span>
-                        <div style={{ flex: 1 }}>
+                    {/* Sản phẩm */}
+                    <div className="order-items-preview">
+                      {order.items.slice(0, 3).map((item, idx) => (
+                        <div
+                          key={item.id || item.productId || idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "10px 0",
+                            borderBottom:
+                              idx < Math.min(order.items.length, 3) - 1
+                                ? "1px solid #2a2a2a"
+                                : "none",
+                          }}
+                        >
+                          <span style={{ fontSize: 36 }}>
+                            {item.product?.emoji || "🏋️"}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: "var(--white)",
+                              }}
+                            >
+                              {item.productName || item.product?.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: "var(--gray)" }}>
+                              x{item.quantity}
+                            </div>
+                          </div>
                           <div
                             style={{
-                              fontSize: 14,
-                              fontWeight: 700,
-                              color: "var(--white)",
+                              fontFamily: "'Bebas Neue', sans-serif",
+                              fontSize: 18,
+                              color: "var(--primary)",
                             }}
                           >
-                            {item.productName || item.product?.name}
-                          </div>
-                          <div style={{ fontSize: 12, color: "var(--gray)" }}>
-                            x{item.quantity}
+                            {formatPrice(
+                              typeof item.lineTotal === "number"
+                                ? item.lineTotal
+                                : parseFloat(item.lineTotal),
+                            )}
                           </div>
                         </div>
+                      ))}
+                      {order.items.length > 3 && (
                         <div
                           style={{
+                            fontSize: 13,
+                            color: "var(--gray)",
+                            padding: "8px 0",
+                          }}
+                        >
+                          +{order.items.length - 3} sản phẩm khác
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer đơn */}
+                    <div className="order-card-footer">
+                      <div>
+                        <span style={{ fontSize: 14, color: "var(--gray)" }}>
+                          Tổng:{" "}
+                        </span>
+                        <span
+                          style={{
                             fontFamily: "'Bebas Neue', sans-serif",
-                            fontSize: 18,
+                            fontSize: 22,
                             color: "var(--primary)",
                           }}
                         >
                           {formatPrice(
-                            typeof item.lineTotal === "number"
-                              ? item.lineTotal
-                              : parseFloat(item.lineTotal),
+                              order.items.reduce((sum, item) => {
+                              // Đảm bảo lineTotal luôn là kiểu số để cộng không bị lỗi chuỗi
+                              const price = typeof item.lineTotal === "number" 
+                                ? item.lineTotal 
+                                : parseFloat(item.lineTotal || 0);
+                              return sum + price;
+                            }, 0)
                           )}
-                        </div>
+                        </span>
                       </div>
-                    ))}
-                    {order.items.length > 3 && (
-                      <div
-                        style={{
-                          fontSize: 13,
-                          color: "var(--gray)",
-                          padding: "8px 0",
-                        }}
-                      >
-                        +{order.items.length - 3} sản phẩm khác
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer đơn */}
-                  <div className="order-card-footer">
-                    <div>
-                      <span style={{ fontSize: 14, color: "var(--gray)" }}>
-                        Tổng:{" "}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "'Bebas Neue', sans-serif",
-                          fontSize: 22,
-                          color: "var(--primary)",
-                        }}
-                      >
-                        {formatPrice(
-                            order.items.reduce((sum, item) => {
-                            // Đảm bảo lineTotal luôn là kiểu số để cộng không bị lỗi chuỗi
-                            const price = typeof item.lineTotal === "number" 
-                              ? item.lineTotal 
-                              : parseFloat(item.lineTotal || 0);
-                            return sum + price;
-                          }, 0)
-                        )}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
+                      <div style={{ display: "flex", gap: 10 }}>
+                      {order.status?.toLowerCase() === "delivered" && (
+                        <button
+                          className="btn-primary"
+                          style={{ padding: "8px 20px", fontSize: 13 }}
+                          onClick={() => handleConfirmPayment(order)}
+                        >
+                          Xác nhận thanh toán
+                        </button>
+                      )}
                       {order.status?.toLowerCase() === "confirmed" && (
                         <button
                           className="btn-outline"
@@ -345,11 +388,36 @@ const OrderPage = ({ navigate, onViewOrderDetail, user, orders }) => {
                         Xem chi tiết
                       </button>
                     </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 24 }}>
+                <button
+                  className="btn-outline"
+                  disabled={pagination.page === 0}
+                  onClick={() => fetchOrders(pagination.page - 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  ← Trước
+                </button>
+                <span style={{ color: "var(--gray)", fontSize: 14 }}>
+                  Trang {pagination.page + 1} / {pagination.totalPages}
+                </span>
+                <button
+                  className="btn-outline"
+                  disabled={pagination.page >= pagination.totalPages - 1}
+                  onClick={() => fetchOrders(pagination.page + 1)}
+                  style={{ padding: "8px 16px" }}
+                >
+                  Sau →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

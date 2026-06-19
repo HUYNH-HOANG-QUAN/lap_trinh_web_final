@@ -86,10 +86,10 @@ export const adminService = {
     },
 
     // ==========================================
-    // CATEGORY APIs
-    // ==========================================
-    getAllCategories: async () => {
-        const res = await fetch(`${ADMIN_API_URL}/category/all`, { headers: getDefaultHeaders() });
+// CATEGORY APIs
+// ==========================================
+    getAllCategories: async (page = 0, size = 100) => {
+        const res = await fetch(`${ADMIN_API_URL}/category/all?page=${page}&size=${size}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch categories');
         return res.json();
     },

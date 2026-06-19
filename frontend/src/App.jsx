@@ -31,7 +31,7 @@ import ContactInboxPage  from "./pages/admin/ContactInboxPage";
 
 import "./styles/global.css";
 import { transformOrderFromBE } from "./utils/orderHelpers";
-import { isLoggedIn } from "./utils/api";
+import { isLoggedIn, apiConfirmPayment } from "./utils/api";
 
 const App = () => {
   // ── Routing ───
@@ -256,6 +256,21 @@ const App = () => {
     }
   };
 
+  // Customer xác nhận thanh toán
+  const handleConfirmPayment = async (order) => {
+    if (!window.confirm("Bạn có chắc muốn xác nhận thanh toán đơn hàng này không?")) return;
+    try {
+      await apiConfirmPayment(order.id);
+      showToast("✅ Đã xác nhận thanh toán!");
+      // Update selectedOrder to refresh status
+      const updatedOrder = { ...order, status: "completed" };
+      setSelectedOrder(transformOrderFromBE(updatedOrder));
+    } catch (err) {
+      console.error("Error confirming payment:", err);
+      showToast("❌ Lỗi xác nhận thanh toán!");
+    }
+  };
+
   // [MỚI] Login / Logout
   const handleLogin = (userData) => {
     setUser(userData);
@@ -364,11 +379,12 @@ const App = () => {
             navigate={navigate}
             onViewOrderDetail={handleViewOrder}
             orders={orders}
+            onConfirmPayment={handleConfirmPayment}
           />
         );
 
       case "order-detail":
-        return <OrderDetailPage order={selectedOrder} navigate={navigate} onAddToCart={handleAddToCart} />;
+        return <OrderDetailPage order={selectedOrder} navigate={navigate} onAddToCart={handleAddToCart} onConfirmPayment={handleConfirmPayment} />;
 
       case "about":
         return <AboutPage navigate={navigate} />;

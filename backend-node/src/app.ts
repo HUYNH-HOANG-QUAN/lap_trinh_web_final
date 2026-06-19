@@ -62,6 +62,7 @@ app.put("/api/users/profile", authenticate, userRoutes.updateProfile);
 app.post("/api/orders/create", authenticate, orderRoutes.createOrder);
 app.post("/api/orders/guest", orderRoutes.createGuestOrder);
 app.get("/api/orders/my-orders", authenticate, orderRoutes.getMyOrders);
+app.put("/api/orders/:id/confirm-payment", authenticate, orderRoutes.confirmPayment);
 app.put("/api/admin/order/:id/status", authenticate, requireAdmin, orderRoutes.updateOrderStatus);
 
 // ============================================

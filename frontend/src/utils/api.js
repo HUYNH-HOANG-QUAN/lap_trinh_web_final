@@ -97,10 +97,12 @@ export const apiCreateGuestOrder = async (orderData) => {
 
 /**
  * Lấy danh sách đơn hàng của user hiện tại
- * @returns {Promise<Array>} - Mảng đơn hàng
+ * @param {number} page - Trang hiện tại (0-based)
+ * @param {number} size - Số lượng đơn hàng mỗi trang
+ * @returns {Promise<Object>} - Phản hồi paginated từ server
  */
-export const apiGetMyOrders = async () => {
-  const response = await fetch(`${API_BASE}/orders/my-orders`, {
+export const apiGetMyOrders = async (page = 0, size = 10) => {
+  const response = await fetch(`${API_BASE}/orders/my-orders?page=${page}&size=${size}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -108,6 +110,20 @@ export const apiGetMyOrders = async () => {
   if (!response.ok) {
     const err = await response.json().catch(() => ({ message: "Không thể lấy danh sách đơn hàng" }));
     throw new Error(err.message || "Không thể lấy danh sách đơn hàng");
+  }
+
+  return response.json();
+};
+
+export const apiConfirmPayment = async (orderId) => {
+  const response = await fetch(`${API_BASE}/orders/${orderId}/confirm-payment`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: "Không thể xác nhận thanh toán" }));
+    throw new Error(err.message || "Không thể xác nhận thanh toán");
   }
 
   return response.json();

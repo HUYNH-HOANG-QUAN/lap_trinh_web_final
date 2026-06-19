@@ -81,13 +81,135 @@ const DashboardPage = ({ navigate }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, ordersData, notifData] = await Promise.all([
-          adminService.getDashboardStats(),
-          adminService.getAllOrders(),
-          adminService.getUnreadCount(),
-        ]);
-        setStats(statsData);
+        // Gọi API với catch riêng để nếu 1 cái lỗi không làm sập trang
+        const ordersPaginatedData = await adminService.getAllOrders(0, 10000).catch(err => {
+          console.error("Lỗi tải orders:", err);
+          return { content: [] };
+        });
+        
+        const notifData = await adminService.getUnreadCount().catch(err => {
+          console.error("Lỗi tải unread count:", err);
+          return { count: 0 };
+        });
+        
+        const ordersData = ordersPaginatedData.content ? ordersPaginatedData.content : (Array.isArray(ordersPaginatedData) ? ordersPaginatedData : []);
         setOrders(ordersData);
+
+        // --- TÍNH TOÁN STATS TRỰC TIẾP TỪ FRONTEND ---
+        const completedOrdersList = ordersData.filter(o => o.status?.toUpperCase() === "COMPLETED");
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0,0,0,0);
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        
+        const totalRevenue = completedOrdersList.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+        
+        const getOrderDate = (o) => new Date(o.completedAt || o.updatedAt || o.placedAt || o.createdAt);
+        
+        const weekRevenue = completedOrdersList
+          .filter(o => getOrderDate(o) >= startOfWeek)
+          .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+          
+        const monthRevenue = completedOrdersList
+          .filter(o => getOrderDate(o) >= startOfMonth)
+          .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+          
+        const yearRevenue = completedOrdersList
+          .filter(o => getOrderDate(o) >= startOfYear)
+          .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+
+        const totalOrdersCount = ordersData.length;
+        const completedOrdersCount = completedOrdersList.length;
+        const pendingOrdersCount = ordersData.filter(o => o.status?.toUpperCase() === "PENDING").length;
+        const todayOrdersCount = completedOrdersList.filter(o => getOrderDate(o) >= startOfDay).length;
+        
+        // Calculate revenueByDay (last 30 days)
+        const revenueByDay = [];
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          d.setHours(0,0,0,0);
+          const nextD = new Date(d);
+          nextD.setDate(nextD.getDate() + 1);
+          
+          const dayOrders = completedOrdersList.filter(o => {
+            const od = getOrderDate(o);
+            return od >= d && od < nextD;
+          });
+          
+          revenueByDay.push({
+            period: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+            revenue: dayOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0),
+            orderCount: dayOrders.length
+          });
+        }
+
+        // Calculate revenueByMonth (last 12 months)
+        const revenueByMonth = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+          
+          const monthOrders = completedOrdersList.filter(o => {
+            const od = getOrderDate(o);
+            return od >= d && od < nextD;
+          });
+          
+          revenueByMonth.push({
+            period: `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`,
+            revenue: monthOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0),
+            orderCount: monthOrders.length
+          });
+        }
+        
+        // Calculate revenueByYear (last 5 years)
+        const revenueByYear = [];
+        for (let i = 4; i >= 0; i--) {
+          const y = now.getFullYear() - i;
+          const yearOrders = completedOrdersList.filter(o => getOrderDate(o).getFullYear() === y);
+          revenueByYear.push({
+            period: `${y}`,
+            revenue: yearOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0),
+            orderCount: yearOrders.length
+          });
+        }
+
+        // Best selling products
+        const productSales = {};
+        completedOrdersList.forEach(o => {
+          (o.items || []).forEach(item => {
+            const pid = item.productId;
+            if (!productSales[pid]) {
+              productSales[pid] = {
+                productId: pid,
+                productName: item.productName || item.product?.name || `Product #${pid}`,
+                totalSold: 0,
+                totalRevenue: 0
+              };
+            }
+            productSales[pid].totalSold += Number(item.quantity) || 0;
+            productSales[pid].totalRevenue += Number(item.lineTotal) || 0;
+          });
+        });
+        
+        const bestSellingProducts = Object.values(productSales)
+          .sort((a, b) => b.totalSold - a.totalSold)
+          .slice(0, 10);
+
+        setStats({
+          totalRevenue, weekRevenue, monthRevenue, yearRevenue,
+          totalOrders: totalOrdersCount, completedOrders: completedOrdersCount,
+          pendingOrders: pendingOrdersCount, todayOrders: todayOrdersCount,
+          revenueByDay, revenueByMonth, revenueByYear,
+          bestSellingProducts
+        });
 
         const pending = ordersData.filter(o => o.paymentStatus === "PENDING_CONFIRM").length;
         setPendingConfirmCount(pending);
@@ -107,10 +229,6 @@ const DashboardPage = ({ navigate }) => {
     : activeTab === "month"
       ? (stats?.revenueByMonth || [])
       : (stats?.revenueByYear || []);
-
-  const maxRevenue = chartData.length > 0
-    ? Math.max(...chartData.map(d => Number(d.revenue) || 0))
-    : 0;
 
   // Recent orders with priority sorting
   const recentOrders = [...orders].sort((a, b) => {
@@ -259,13 +377,10 @@ const DashboardPage = ({ navigate }) => {
           <div style={{ fontSize: 32, marginBottom: 8 }}><Calendar1></Calendar1></div>
           <div style={{ fontSize: 11, color: "var(--gray)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Doanh Thu Tuần</div>
           <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--green)", lineHeight: 1 }}>
-            {formatPrice(stats?.todayRevenue)}
+            {formatPrice(stats?.weekRevenue)}
           </div>
           <div style={{ fontSize: 11, color: "var(--gray)", marginTop: 6 }}>
-            {(() => {
-              const weekRevenue = (stats?.revenueByDay || []).slice(-7).reduce((s, d) => s + Number(d.revenue || 0), 0);
-              return `7 ngày gần nhất: ${formatPrice(weekRevenue)}`;
-            })()}
+            Tuần này
           </div>
         </div>
 

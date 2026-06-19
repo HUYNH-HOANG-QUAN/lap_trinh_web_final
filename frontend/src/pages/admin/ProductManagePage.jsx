@@ -41,7 +41,7 @@ const ProductManagePage = ({ showToast }) => {
       } else {
         setProducts(prodData);
       }
-      setCategories(catData);
+      setCategories(catData.content ? catData.content : catData);
     } catch (error) {
       showToast(`❌ Lỗi tải dữ liệu: ${error.message}`);
     } finally {

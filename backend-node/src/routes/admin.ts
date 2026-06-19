@@ -17,20 +17,31 @@ function parseId(param: string | undefined): number | null {
 // Users
 export async function getAllUsers(req: AuthRequest, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
-  const users = await userRepo
+  const page = parseInt(req.query.page as string) || 0;
+  const size = parseInt(req.query.size as string) || 10;
+  const [users, totalElements] = await userRepo
     .createQueryBuilder("user")
     .where("user.deletedAt IS NULL")
     .orderBy("user.createdAt", "DESC")
-    .getMany();
+    .skip(page * size)
+    .take(size)
+    .getManyAndCount();
 
-  res.json(users.map((u) => ({
-    id: u.id,
-    fullName: u.fullName,
-    email: u.email,
-    phone: u.phone,
-    role: u.role,
-    status: u.status,
-  })));
+  const totalPages = Math.ceil(totalElements / size);
+  res.json({
+    content: users.map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      status: u.status,
+    })),
+    totalElements,
+    totalPages,
+    size,
+    number: page
+  });
 }
 
 export async function createUser(req: AuthRequest, res: Response): Promise<void> {
@@ -109,15 +120,30 @@ export async function deleteUser(req: AuthRequest, res: Response): Promise<void>
 // Categories
 export async function getAllCategoriesAdmin(req: AuthRequest, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
-  const categories = await categoryRepo.find({ order: { createdAt: "ASC" } });
-  res.json(categories.map((c) => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    parentId: c.parentId,
-    isActive: c.isActive,
-    createdAt: c.createdAt,
-  })));
+  const page = parseInt(req.query.page as string) || 0;
+  const size = parseInt(req.query.size as string) || 10;
+  const [categories, totalElements] = await categoryRepo
+    .createQueryBuilder("c")
+    .orderBy("c.createdAt", "ASC")
+    .skip(page * size)
+    .take(size)
+    .getManyAndCount();
+
+  const totalPages = Math.ceil(totalElements / size);
+  res.json({
+    content: categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parentId,
+      isActive: c.isActive,
+      createdAt: c.createdAt,
+    })),
+    totalElements,
+    totalPages,
+    size,
+    number: page
+  });
 }
 
 export async function createCategory(req: AuthRequest, res: Response): Promise<void> {
@@ -186,29 +212,40 @@ export async function deleteCategory(req: AuthRequest, res: Response): Promise<v
 // Products
 export async function getAllProductsAdmin(req: AuthRequest, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
-  const products = await productRepo
+  const page = parseInt(req.query.page as string) || 0;
+  const size = parseInt(req.query.size as string) || 10;
+  const [products, totalElements] = await productRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.category", "c")
     .where("p.deletedAt IS NULL")
     .orderBy("p.createdAt", "DESC")
-    .getMany();
+    .skip(page * size)
+    .take(size)
+    .getManyAndCount();
 
-  res.json(products.map((p) => ({
-    id: p.id,
-    sku: p.sku,
-    slug: p.slug,
-    name: p.name,
-    shortDescription: p.shortDescription,
-    description: p.description,
-    price: p.price,
-    oldPrice: p.oldPrice,
-    ratingAvg: p.ratingAvg,
-    ratingCount: p.ratingCount,
-    stockQuantity: p.stockQuantity,
-    isActive: p.isActive,
-    categoryId: p.categoryId,
-    categoryName: p.category?.name || null,
-  })));
+  const totalPages = Math.ceil(totalElements / size);
+  res.json({
+    content: products.map((p) => ({
+      id: p.id,
+      sku: p.sku,
+      slug: p.slug,
+      name: p.name,
+      shortDescription: p.shortDescription,
+      description: p.description,
+      price: p.price,
+      oldPrice: p.oldPrice,
+      ratingAvg: p.ratingAvg,
+      ratingCount: p.ratingCount,
+      stockQuantity: p.stockQuantity,
+      isActive: p.isActive,
+      categoryId: p.categoryId,
+      categoryName: p.category?.name || null,
+    })),
+    totalElements,
+    totalPages,
+    size,
+    number: page
+  });
 }
 
 export async function createProduct(req: AuthRequest, res: Response): Promise<void> {
@@ -277,38 +314,54 @@ export async function deleteProduct(req: AuthRequest, res: Response): Promise<vo
 // Orders
 export async function getAllOrdersAdmin(req: AuthRequest, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
-  const orders = await orderRepo
+  const page = parseInt(req.query.page as string) || 0;
+  const size = parseInt(req.query.size as string) || 10;
+  const [orders, totalElements] = await orderRepo
     .createQueryBuilder("o")
     .leftJoinAndSelect("o.user", "u")
     .leftJoinAndSelect("o.items", "i")
     .orderBy("o.createdAt", "DESC")
-    .getMany();
+    .skip(page * size)
+    .take(size)
+    .getManyAndCount();
 
-  res.json(orders.map((o) => ({
-    id: o.id,
-    orderCode: o.orderCode,
-    userId: o.userId,
-    username: o.user?.fullName || "Guest",
-    total: o.totalAmount,
-    totalAmount: o.totalAmount,
-    status: o.status,
-    paymentStatus: o.paymentStatus,
-    createdAt: o.createdAt,
-    recipientName: o.recipientName,
-    recipientPhone: o.recipientPhone,
-    shippingAddressLine1: o.shippingAddressLine1,
-    shippingCity: o.shippingCity,
-    shippingProvince: o.shippingProvince,
-    items: (o.items || []).map((i: OrderItem) => ({
-      id: i.id,
-      productId: i.productId,
-      productName: i.productName,
-      productSku: i.productSku,
-      quantity: i.quantity,
-      unitPrice: i.unitPrice,
-      lineTotal: i.lineTotal,
+  const totalPages = Math.ceil(totalElements / size);
+  res.json({
+    content: orders.map((o) => ({
+      id: o.id,
+      orderCode: o.orderCode,
+      userId: o.userId,
+      user: o.user ? {
+        id: o.user.id,
+        fullName: o.user.fullName,
+        phone: o.user.phone
+      } : null,
+      username: o.user?.fullName || "Guest",
+      total: o.totalAmount,
+      totalAmount: o.totalAmount,
+      status: o.status,
+      paymentStatus: o.paymentStatus,
+      createdAt: o.createdAt,
+      recipientName: o.recipientName,
+      recipientPhone: o.recipientPhone,
+      shippingAddressLine1: o.shippingAddressLine1,
+      shippingCity: o.shippingCity,
+      shippingProvince: o.shippingProvince,
+      items: (o.items || []).map((i: OrderItem) => ({
+        id: i.id,
+        productId: i.productId,
+        productName: i.productName,
+        productSku: i.productSku,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        lineTotal: i.lineTotal,
+      })),
     })),
-  })));
+    totalElements,
+    totalPages,
+    size,
+    number: page
+  });
 }
 
 export async function getOrderByIdAdmin(req: AuthRequest, res: Response): Promise<void> {

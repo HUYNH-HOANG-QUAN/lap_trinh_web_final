@@ -7,13 +7,15 @@ import { formatPrice } from "../utils/productHelpers";
 import { transformOrderFromBE } from "../utils/orderHelpers";
 
 const STATUS_CONFIG = {
-  PENDING:   { label: "Chờ xác nhận",  color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  border: "#f59e0b" },
-  CONFIRMED: { label: "Đã xác nhận",   color: "var(--green)", bg: "rgba(34,197,94,0.1)", border: "var(--green)" },
-  CANCELLED: { label: "Đã hủy",         color: "var(--red)",   bg: "rgba(239,68,68,0.1)", border: "var(--red)"   },
+  PENDING:     { label: "Chờ xác nhận",  color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  border: "#f59e0b" },
+  CONFIRMED:   { label: "Đã xác nhận",   color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", border: "#8b5cf6" },
+  DELIVERED:   { label: "Chờ thanh toán",  color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "#3b82f6" },
+  COMPLETED:   { label: "Hoàn thành",   color: "var(--green)", bg: "rgba(34,197,94,0.1)", border: "var(--green)" },
+  CANCELLED:   { label: "Đã hủy",         color: "var(--red)",   bg: "rgba(239,68,68,0.1)", border: "var(--red)"   },
   CANCELLED_lower: { label: "Đã hủy",  color: "var(--red)",   bg: "rgba(239,68,68,0.1)", border: "var(--red)"   },
 };
 
-const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
+const OrderDetailPage = ({ order, navigate, onAddToCart, onConfirmPayment }) => {
   // If order is a raw BE response (no info, no subtotal), transform it
   const safeOrder = order && !order.info && !order.subtotal
     ? transformOrderFromBE(order)
@@ -33,14 +35,23 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
     );
   }
 
-  const statusKey = safeOrder.status?.toUpperCase() === "CANCELLED" ? "CANCELLED"
-    : safeOrder.status?.toUpperCase() === "CONFIRMED" ? "CONFIRMED"
-    : safeOrder.status?.toUpperCase() === "PENDING" ? "PENDING"
-    : safeOrder.status?.toLowerCase() === "cancelled" ? "CANCELLED_lower"
+  const statusUpper = safeOrder.status?.toUpperCase();
+  const statusLower = safeOrder.status?.toLowerCase();
+  
+  const statusKey = statusUpper === "CANCELLED" ? "CANCELLED"
+    : statusUpper === "COMPLETED" ? "COMPLETED"
+    : statusUpper === "DELIVERED" ? "DELIVERED"
+    : statusUpper === "CONFIRMED" ? "CONFIRMED"
+    : statusUpper === "PENDING" ? "PENDING"
+    : statusLower === "cancelled" ? "CANCELLED_lower"
     : "PENDING";
 
   const st = STATUS_CONFIG[statusKey] || STATUS_CONFIG.PENDING;
-  const isCancelled = safeOrder.status?.toLowerCase() === "cancelled" || safeOrder.status?.toUpperCase() === "CANCELLED";
+  const isCancelled = statusLower === "cancelled" || statusUpper === "CANCELLED";
+  const isDelivered = statusLower === "delivered" || statusUpper === "DELIVERED";
+  const isCompleted = statusLower === "completed" || statusUpper === "COMPLETED";
+  const isConfirmed = statusLower === "confirmed" || statusUpper === "CONFIRMED";
+  const isPending = statusLower === "pending" || statusUpper === "PENDING";
 
   return (
     <div>
@@ -98,14 +109,24 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
                   }}>
                     {st.label}
                   </div>
-                  {safeOrder.status?.toUpperCase() === "CONFIRMED" && (
-                    <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 4 }}>
-                      ✓ Admin đã xác nhận thanh toán thành công
-                    </div>
-                  )}
-                  {safeOrder.status?.toLowerCase() === "pending" && (
+                  {isPending && (
                     <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 4 }}>
                       Đang chờ admin xác nhận đơn hàng...
+                    </div>
+                  )}
+                  {isConfirmed && (
+                    <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 4 }}>
+                      Đơn hàng đã được xác nhận, đang chuẩn bị giao...
+                    </div>
+                  )}
+                  {isDelivered && (
+                    <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 4 }}>
+                      Đơn hàng đã được giao, vui lòng xác nhận thanh toán!
+                    </div>
+                  )}
+                  {isCompleted && (
+                    <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 4 }}>
+                      ✓ Đơn hàng đã hoàn thành!
                     </div>
                   )}
                 </div>
@@ -321,7 +342,16 @@ const OrderDetailPage = ({ order, navigate, onAddToCart }) => {
             >
               ← Về danh sách đơn
             </button>
-            {safeOrder.status?.toLowerCase() === "confirmed" && onAddToCart && (
+            {isDelivered && onConfirmPayment && (
+              <button
+                className="btn-primary"
+                style={{ width: "100%", padding: "12px 0", marginTop: 10 }}
+                onClick={() => onConfirmPayment(safeOrder)}
+              >
+                Xác nhận thanh toán
+              </button>
+            )}
+            {(isConfirmed || isCompleted) && onAddToCart && (
               <button
                 className="btn-primary"
                 style={{ width: "100%", padding: "12px 0", marginTop: 10 }}
