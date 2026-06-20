@@ -1,87 +1,90 @@
-// import { AppDataSource } from "../config/database";
-// import { User } from "../entity/User";
-// import { sendOtpEmail } from "./emailService";
+import { AppDataSource } from "../config/database";
+import { Otp, OtpAction } from "../entity/Otp";
+import { sendOtpEmail } from "./emailService";
 
-// interface OtpEntry {
-//   otp: string;
-//   expiresAt: number;
-//   action: "register" | "reset_password";
-//   userId?: number;
-//   email: string;
-// }
+const OTP_EXPIRY_MINUTES = 5;
+const MAX_ATTEMPTS = 5;
 
-// const otpStore = new Map<string, OtpEntry>();
+function generateOtpCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-// export function generateOtp(): string {
-//   return Math.floor(100000 + Math.random() * 900000).toString();
-// }
+export async function sendRegisterOtp(
+  email: string
+): Promise<{ success: boolean; message: string }> {
+  const otpRepo = AppDataSource.getRepository(Otp);
 
-// export async function sendOtp(
-//   email: string,
-//   action: "register" | "reset_password",
-//   userId?: number
-// ): Promise<{ success: boolean; message: string }> {
-//   const existing = otpStore.get(email);
-//   if (existing && existing.expiresAt > Date.now()) {
-//     const remaining = Math.ceil((existing.expiresAt - Date.now()) / 1000);
-//     return {
-//       success: false,
-//       message: `Vui lòng đợi ${remaining} giây trước khi gửi lại mã.`,
-//     };
-//   }
+  const existing = await otpRepo.findOne({
+    where: { email, action: OtpAction.REGISTER, isUsed: false },
+    order: { createdAt: "DESC" },
+  });
 
-//   const otp = generateOtp();
-//   const expiresAt = Date.now() + 5 * 60 * 1000;
+  if (existing && existing.expiresAt > new Date()) {
+    const remaining = Math.ceil((existing.expiresAt.getTime() - Date.now()) / 1000);
+    return {
+      success: false,
+      message: `Vui lòng đợi ${remaining} giây trước khi gửi lại mã.`,
+    };
+  }
 
-//   otpStore.set(email, { otp, expiresAt, action, userId, email });
+  const code = generateOtpCode();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-//   try {
-//     await sendOtpEmail(email, otp);
-//     return { success: true, message: "Mã OTP đã được gửi đến email của bạn." };
-//   } catch (error) {
-//     otpStore.delete(email);
-//     console.error("[OTP] Failed to send email:", error);
-//     return {
-//       success: false,
-//       message: "Không thể gửi email. Vui lòng kiểm tra lại địa chỉ email.",
-//     };
-//   }
-// }
+  const otp = otpRepo.create({
+    email,
+    otpCode: code,
+    action: OtpAction.REGISTER,
+    expiresAt,
+    attempts: 0,
+    isUsed: false,
+  });
 
-// export async function verifyOtp(
-//   email: string,
-//   otp: string
-// ): Promise<{ success: boolean; message: string; action?: "register" | "reset_password"; userId?: number }> {
-//   const entry = otpStore.get(email);
+  try {
+    await sendOtpEmail(email, code);
+    await otpRepo.save(otp);
+    return { success: true, message: "Mã OTP đã được gửi đến email của bạn." };
+  } catch (error: any) {
+    console.error("[OTP] Failed to send email:", error);
+    return {
+      success: false,
+      message: "Không thể gửi email. Vui lòng kiểm tra lại địa chỉ email.",
+    };
+  }
+}
 
-//   if (!entry) {
-//     return { success: false, message: "Mã OTP không tồn tại. Vui lòng yêu cầu mã mới." };
-//   }
+export async function verifyRegisterOtp(
+  email: string,
+  code: string
+): Promise<{ success: boolean; message: string }> {
+  const otpRepo = AppDataSource.getRepository(Otp);
 
-//   if (entry.expiresAt < Date.now()) {
-//     otpStore.delete(email);
-//     return { success: false, message: "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới." };
-//   }
+  const otp = await otpRepo.findOne({
+    where: { email, action: OtpAction.REGISTER, isUsed: false },
+    order: { createdAt: "DESC" },
+  });
 
-//   if (entry.otp !== otp.trim()) {
-//     return { success: false, message: "Mã OTP không đúng." };
-//   }
+  if (!otp) {
+    return { success: false, message: "Mã OTP không tồn tại. Vui lòng yêu cầu mã mới." };
+  }
 
-//   otpStore.delete(email);
+  if (otp.expiresAt < new Date()) {
+    await otpRepo.delete(otp.id);
+    return { success: false, message: "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới." };
+  }
 
-//   if (entry.action === "register") {
-//     const userRepo = AppDataSource.getRepository(User);
-//     const user = await userRepo.findOne({ where: { email: entry.email } as any });
-//     if (user) {
-//       user.emailVerifiedAt = new Date();
-//       await userRepo.save(user);
-//     }
-//   }
+  if (otp.attempts >= MAX_ATTEMPTS) {
+    await otpRepo.delete(otp.id);
+    return { success: false, message: "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới." };
+  }
 
-//   return {
-//     success: true,
-//     message: "Xác minh OTP thành công.",
-//     action: entry.action,
-//     userId: entry.userId,
-//   };
-// }
+  if (otp.otpCode !== code.trim()) {
+    otp.attempts += 1;
+    await otpRepo.save(otp);
+    const left = MAX_ATTEMPTS - otp.attempts;
+    return { success: false, message: `Mã OTP không đúng. Còn ${left} lần thử.` };
+  }
+
+  otp.isUsed = true;
+  await otpRepo.save(otp);
+  return { success: true, message: "Xác minh OTP thành công." };
+}

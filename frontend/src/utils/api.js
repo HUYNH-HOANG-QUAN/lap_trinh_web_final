@@ -36,16 +36,31 @@ export const apiLogin = async (username, password, rememberMe = false) => {
   return response.json();
 };
 
-export const apiRegister = async (fullName, email, phone, password, confirmPassword) => {
-  const response = await fetch(`${API_BASE}/auth/register`, {
+export const apiRegister = async (fullName, email, phone) => {
+  const response = await fetch(`${API_BASE}/auth/register/step1`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fullName, email, phone, password, confirmPassword }),
+    body: JSON.stringify({ fullName, email, phone }),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({ message: "Đăng ký thất bại" }));
     throw new Error(err.message || "Đăng ký thất bại");
+  }
+
+  return response.json();
+};
+
+export const apiVerifyRegisterOtp = async (tempData, otpCode, password, confirmPassword) => {
+  const response = await fetch(`${API_BASE}/auth/register/step2`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tempData, otpCode, password, confirmPassword }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: "Xác minh OTP thất bại" }));
+    throw new Error(err.message || "Xác minh OTP thất bại");
   }
 
   return response.json();

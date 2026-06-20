@@ -11,6 +11,7 @@ import { Order } from "../entity/Order";
 import { OrderItem } from "../entity/OrderItem";
 import { Review } from "../entity/Review";
 import { Message } from "../entity/Message";
+import { Otp } from "../entity/Otp";
 
 export const AppDataSource = new DataSource({
   type: "mysql",
@@ -36,6 +37,7 @@ export const AppDataSource = new DataSource({
     OrderItem,
     Review,
     Message,
+    Otp,
   ],
   migrations: [],
   subscribers: [],

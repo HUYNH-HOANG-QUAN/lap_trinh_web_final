@@ -2,6 +2,11 @@ import { API_BASE_URL, getDefaultHeaders } from './apiConfig';
 
 const ADMIN_API_URL = `${API_BASE_URL}/admin`;
 
+const authHeadersNoJson = () => {
+    const token = localStorage.getItem("token");
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const adminService = {
     /**
      * Lấy danh sách tất cả người dùng
@@ -123,9 +128,43 @@ export const adminService = {
     // ==========================================
     // PRODUCT APIs
     // ==========================================
-    getAllProducts: async (page = 0, size = 10) => {
-        const res = await fetch(`${ADMIN_API_URL}/product/all?page=${page}&size=${size}`, { headers: getDefaultHeaders() });
+    getAllProducts: async (page = 0, size = 10, filters = {}) => {
+        // filters: { keyword?, minPrice?, maxPrice? }
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("size", String(size));
+        if (filters.keyword) params.set("keyword", String(filters.keyword));
+        if (filters.minPrice !== undefined && filters.minPrice !== null && filters.minPrice !== "") {
+            params.set("minPrice", String(filters.minPrice));
+        }
+        if (filters.maxPrice !== undefined && filters.maxPrice !== null && filters.maxPrice !== "") {
+            params.set("maxPrice", String(filters.maxPrice));
+        }
+        const res = await fetch(`${ADMIN_API_URL}/product/all?${params.toString()}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch products');
+        return res.json();
+    },
+    /**
+     * Upload 1 ảnh sản phẩm (multipart/form-data, field "image")
+     * Trả về { imageUrl, filename, size, mimetype }
+     */
+    uploadProductImage: async (file) => {
+        if (!file) throw new Error("Chưa chọn file ảnh.");
+        const formData = new FormData();
+        formData.append("image", file);
+        const res = await fetch(`${ADMIN_API_URL}/upload/product-image`, {
+            method: "POST",
+            headers: authHeadersNoJson(),
+            body: formData,
+        });
+        if (!res.ok) {
+            let errMsg = "Upload ảnh thất bại";
+            try {
+                const txt = await res.text();
+                if (txt) errMsg = txt;
+            } catch {}
+            throw new Error(errMsg);
+        }
         return res.json();
     },
     createProduct: async (data) => {

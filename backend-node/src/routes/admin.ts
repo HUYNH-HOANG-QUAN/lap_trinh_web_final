@@ -3,9 +3,13 @@ import { AppDataSource } from "../config/database";
 import { User } from "../entity/User";
 import { Category } from "../entity/Category";
 import { Product } from "../entity/Product";
+import { ProductImage } from "../entity/ProductImage";
 import { Order } from "../entity/Order";
 import { OrderItem } from "../entity/OrderItem";
 import bcryptjs from "bcryptjs";
+import fs from "fs";
+import path from "path";
+import { productImageUpload, toPublicImageUrl } from "../config/upload";
 
 /** Parse param thành số nguyên, trả về null nếu không hợp lệ */
 function parseId(param: string | undefined): number | null {
@@ -211,16 +215,51 @@ export async function deleteCategory(req: Request, res: Response): Promise<void>
 // Products
 export async function getAllProductsAdmin(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
+  const productImageRepo = AppDataSource.getRepository(ProductImage);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
-  const [products, totalElements] = await productRepo
+  const keyword = (req.query.keyword as string | undefined)?.trim();
+  const minPrice = req.query.minPrice !== undefined ? Number(req.query.minPrice) : undefined;
+  const maxPrice = req.query.maxPrice !== undefined ? Number(req.query.maxPrice) : undefined;
+
+  const qb = productRepo
     .createQueryBuilder("p")
     .leftJoinAndSelect("p.category", "c")
-    .where("p.deletedAt IS NULL")
+    .where("p.deletedAt IS NULL");
+
+  if (keyword) {
+    qb.andWhere("(LOWER(p.name) LIKE LOWER(:kw) OR LOWER(p.sku) LIKE LOWER(:kw) OR LOWER(p.slug) LIKE LOWER(:kw))", { kw: `%${keyword}%` });
+  }
+  if (minPrice !== undefined && !isNaN(minPrice)) {
+    qb.andWhere("p.price >= :minPrice", { minPrice });
+  }
+  if (maxPrice !== undefined && !isNaN(maxPrice)) {
+    qb.andWhere("p.price <= :maxPrice", { maxPrice });
+  }
+
+  const [products, totalElements] = await qb
     .orderBy("p.createdAt", "DESC")
     .skip(page * size)
     .take(size)
     .getManyAndCount();
+
+  // Lấy ảnh chính (isPrimary=true, hoặc sortOrder nhỏ nhất) cho từng sản phẩm
+  const productIds = products.map((p) => p.id);
+  const primaryImages = productIds.length
+    ? await productImageRepo
+        .createQueryBuilder("pi")
+        .where("pi.productId IN (:...ids)", { ids: productIds })
+        .orderBy("pi.isPrimary", "DESC")
+        .addOrderBy("pi.sortOrder", "ASC")
+        .addOrderBy("pi.id", "ASC")
+        .getMany()
+    : [];
+  const imageByProductId = new Map<number, ProductImage>();
+  for (const img of primaryImages) {
+    if (!imageByProductId.has(img.productId)) {
+      imageByProductId.set(img.productId, img);
+    }
+  }
 
   const totalPages = Math.ceil(totalElements / size);
   res.json({
@@ -239,6 +278,7 @@ export async function getAllProductsAdmin(req: Request, res: Response): Promise<
       isActive: p.isActive,
       categoryId: p.categoryId,
       categoryName: p.category?.name || null,
+      imageUrl: imageByProductId.get(p.id)?.imageUrl || null,
     })),
     totalElements,
     totalPages,
@@ -247,9 +287,32 @@ export async function getAllProductsAdmin(req: Request, res: Response): Promise<
   });
 }
 
+// Upload 1 ảnh sản phẩm – trả về URL public (/uploads/products/<file>)
+export const uploadProductImageMiddleware = productImageUpload.single("image");
+
+export async function uploadProductImage(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "Không có file được upload." });
+      return;
+    }
+    const imageUrl = toPublicImageUrl(req.file.filename);
+    res.status(201).json({
+      imageUrl,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    });
+  } catch (error: any) {
+    console.error("uploadProductImage error:", error);
+    res.status(500).json({ message: error?.message || "Lỗi upload ảnh." });
+  }
+}
+
 export async function createProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
-  const { sku, slug, name, shortDescription, description, price, oldPrice, stockQuantity, categoryId, isActive } = req.body;
+  const productImageRepo = AppDataSource.getRepository(ProductImage);
+  const { sku, slug, name, shortDescription, description, price, oldPrice, stockQuantity, categoryId, isActive, imageUrl } = req.body;
 
   const product = new Product();
   product.sku = sku;
@@ -266,11 +329,30 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
   product.ratingCount = 0;
 
   const saved = await productRepo.save(product);
-  res.status(201).json({ id: saved.id, name: saved.name, sku: saved.sku });
+
+  // Lưu ảnh sản phẩm (nếu có) vào bảng product_images
+  let savedImageUrl: string | null = null;
+  if (imageUrl && typeof imageUrl === "string" && imageUrl.trim()) {
+    const img = new ProductImage();
+    img.productId = saved.id;
+    img.imageUrl = imageUrl.trim();
+    img.sortOrder = 0;
+    img.isPrimary = true;
+    await productImageRepo.save(img);
+    savedImageUrl = img.imageUrl;
+  }
+
+  res.status(201).json({
+    id: saved.id,
+    name: saved.name,
+    sku: saved.sku,
+    imageUrl: savedImageUrl,
+  });
 }
 
 export async function updateProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
+  const productImageRepo = AppDataSource.getRepository(ProductImage);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
   const product = await productRepo.findOne({ where: { id } });
@@ -279,7 +361,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const { sku, slug, name, shortDescription, description, price, oldPrice, stockQuantity, categoryId, isActive } = req.body;
+  const { sku, slug, name, shortDescription, description, price, oldPrice, stockQuantity, categoryId, isActive, imageUrl } = req.body;
   if (sku) product.sku = sku;
   if (slug) product.slug = slug;
   if (name) product.name = name;
@@ -292,11 +374,68 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
   if (isActive !== undefined) product.isActive = isActive;
 
   const saved = await productRepo.save(product);
+
+  // Cập nhật ảnh chính nếu imageUrl được gửi lên
+  if (typeof imageUrl === "string") {
+    const trimmed = imageUrl.trim();
+    if (trimmed) {
+      // Tìm ảnh chính hiện tại
+      const existingPrimary = await productImageRepo
+        .createQueryBuilder("pi")
+        .where("pi.productId = :pid", { pid: id })
+        .andWhere("pi.isPrimary = :primary", { primary: true })
+        .getOne();
+
+      if (existingPrimary) {
+        if (existingPrimary.imageUrl !== trimmed) {
+          existingPrimary.imageUrl = trimmed;
+          await productImageRepo.save(existingPrimary);
+        }
+      } else {
+        // Chưa có ảnh chính → tạo mới
+        const img = new ProductImage();
+        img.productId = id;
+        img.imageUrl = trimmed;
+        img.sortOrder = 0;
+        img.isPrimary = true;
+        await productImageRepo.save(img);
+      }
+    } else {
+      // imageUrl rỗng → xóa ảnh chính hiện tại (nếu có) và file vật lý
+      const existingPrimary = await productImageRepo
+        .createQueryBuilder("pi")
+        .where("pi.productId = :pid", { pid: id })
+        .andWhere("pi.isPrimary = :primary", { primary: true })
+        .getOne();
+      if (existingPrimary) {
+        await removeImageFile(existingPrimary.imageUrl);
+        await productImageRepo.delete({ id: existingPrimary.id } as any);
+      }
+    }
+  }
+
   res.json({ id: saved.id, name: saved.name });
+}
+
+// Xóa file ảnh vật lý (nếu thuộc /uploads/products)
+function removeImageFile(imageUrl: string): void {
+  try {
+    if (!imageUrl) return;
+    const prefix = "/uploads/products/";
+    if (!imageUrl.startsWith(prefix)) return;
+    const filename = imageUrl.substring(prefix.length);
+    const filePath = path.join(__dirname, "..", "..", "uploads", "products", filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (e) {
+    console.warn("Không thể xóa file ảnh:", e);
+  }
 }
 
 export async function deleteProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
+  const productImageRepo = AppDataSource.getRepository(ProductImage);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
   const product = await productRepo.findOne({ where: { id } });
@@ -304,9 +443,18 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
     res.status(404).json({ message: "Product not found" });
     return;
   }
+
+  // Soft delete sản phẩm
   product.deletedAt = new Date();
   product.isActive = false;
   await productRepo.save(product);
+
+  // Xóa các file ảnh vật lý (nếu có) - giữ lại record product_images để audit
+  const images = await productImageRepo.find({ where: { productId: id } });
+  for (const img of images) {
+    removeImageFile(img.imageUrl);
+  }
+
   res.status(204).send();
 }
 

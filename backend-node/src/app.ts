@@ -21,12 +21,16 @@ const app = express();
 // Middleware
 const allowedOrigin = process.env.CORS_ORIGIN || '*';
 
-app.use(cors({
-  origin: allowedOrigin,
+const corsOptions: cors.CorsOptions = {
+  origin: allowedOrigin === '*'
+    ? '*'
+    : allowedOrigin.split(',').map(o => o.trim()),
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -39,7 +43,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Auth routes (public)
 // ============================================
 app.post("/api/v1/auth/login", authRoutes.login);
-app.post("/api/v1/auth/register", authRoutes.register);
+app.post("/api/v1/auth/register/step1", authRoutes.registerStep1);
+app.post("/api/v1/auth/register/step2", authRoutes.registerStep2);
 app.post("/api/v1/auth/logout", authRoutes.logout);
 app.post("/api/v1/auth/forgot-password", authRoutes.forgotPassword);
 app.post("/api/v1/auth/reset-password", authRoutes.resetPassword);
@@ -114,6 +119,15 @@ app.get("/api/v1/admin/product/all", authenticate, requireAdmin, adminRoutes.get
 app.post("/api/v1/admin/product/add", authenticate, requireAdmin, adminRoutes.createProduct);
 app.put("/api/v1/admin/product/:id", authenticate, requireAdmin, adminRoutes.updateProduct);
 app.delete("/api/v1/admin/product/:id", authenticate, requireAdmin, adminRoutes.deleteProduct);
+
+// Upload ảnh sản phẩm (multipart/form-data, field "image")
+app.post(
+  "/api/v1/admin/upload/product-image",
+  authenticate,
+  requireAdmin,
+  adminRoutes.uploadProductImageMiddleware,
+  adminRoutes.uploadProductImage,
+);
 
 app.get("/api/v1/admin/order/all", authenticate, requireAdmin, adminRoutes.getAllOrdersAdmin);
 app.get("/api/v1/admin/order/:id", authenticate, requireAdmin, adminRoutes.getOrderByIdAdmin);

@@ -16,7 +16,7 @@ const LoginPage = ({ onLogin, navigate }) => {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleGoogleLogin = () => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api/v1";
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "https://protech-backend-1qu3.onrender.com/api/v1";
     const googleUrl = `${apiBase}/auth/google`;
     window.location.href = googleUrl;
   };

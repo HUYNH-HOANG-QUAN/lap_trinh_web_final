@@ -12,8 +12,13 @@ COPY package*.json ./
 RUN npm ci
 
 # Biến môi trường Vite sẽ được truyền từ docker-compose khi build
+# Dùng cho deploy trên cùng Docker network (docker-compose up)
 ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+# Dùng cho deploy riêng trên Render (truyền khi build)
+ARG BACKEND_URL=https://protech-backend-1qu3.onrender.com
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-${BACKEND_URL}}/api/v1
 
 # Copy source và build
 COPY . .

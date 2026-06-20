@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: profit-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/v1/products
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_HOST
+        value: mysql-1c674537-xuanhung12a3atd-c3ee.b.aivencloud.com
+      - key: DB_PORT
+        value: 26354
+      - key: DB_NAME
+        value: defaultdb
+      - key: DB_USER
+        value: avnadmin
+      - key: DB_PASSWORD
+        value: AVNS_D4vT1i6szaD8AP_qQr0
+      - key: CORS_ORIGIN
+        value: https://protech-frontend.onrender.com
+      - key: FRONTEND_BASE_URL
+        value: https://protech-frontend.onrender.com
+      - key: JWT_SECRET
+        value: ProFitJwtSecretKeyMustBeAtLeastSixtyFourCharactersLongForHS512
+      - key: JWT_EXPIRATION_MS
+        value: 86400000
+      - key: JWT_REMEMBER_EXPIRATION_MS
+        value: 604800000
+      - key: BOOTSTRAP_ADMIN_ENABLED
+        value: "true"
+      - key: BOOTSTRAP_ADMIN_FULL_NAME
+        value: Administrator
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        value: admin@profit.com
+      - key: BOOTSTRAP_ADMIN_PHONE
+        value: "0123456789"
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        value: Admin@123
+      - key: BOOTSTRAP_CUSTOMER_ENABLED
+        value: "true"
+      - key: BOOTSTRAP_CUSTOMER_FULL_NAME
+        value: Khach Hang
+      - key: BOOTSTRAP_CUSTOMER_EMAIL
+        value: khachhang@gmail.com
+      - key: BOOTSTRAP_CUSTOMER_PHONE
+        value: "0987654321"
+      - key: BOOTSTRAP_CUSTOMER_PASSWORD
+        value: Customer@123
+      - key: EMAIL_SMTP_USER
+        value: work.huynhhoangquan@gmail.com
+      - key: EMAIL_SMTP_PASSWORD
+        value: kftnnqxjqpbilfiz
+      - key: GOOGLE_CLIENT_ID
+        value: 167963423617-vl9hkdv75lbojr2keoqmhlhhgf1t65qh.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_SECRET
+        value: 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
+      - key: GOOGLE_CALLBACK_URL
+        value: https://protech-frontend.onrender.com/api/v1/auth/google/callback

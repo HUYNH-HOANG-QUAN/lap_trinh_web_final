@@ -6,6 +6,7 @@ import { AppDataSource } from "../config/database";
 import { User, Role, UserStatus } from "../entity/User";
 import { config } from "../config/env";
 import { sendWelcomeEmail, sendResetPasswordEmail } from "../service/emailService";
+import { sendRegisterOtp, verifyRegisterOtp } from "../service/otpService";
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { username, password, rememberMe } = req.body;
@@ -63,8 +64,9 @@ export async function login(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function register(req: Request, res: Response): Promise<void> {
-  const { fullName, email, phone, password, confirmPassword } = req.body;
+// Bước 1 – Gửi OTP về email (thông tin step 1)
+export async function registerStep1(req: Request, res: Response): Promise<void> {
+  const { fullName, email, phone } = req.body;
 
   if (!fullName?.trim()) {
     res.status(400).json({ message: "Ho ten khong duoc trong." });
@@ -79,8 +81,41 @@ export async function register(req: Request, res: Response): Promise<void> {
     res.status(400).json({ message: "Email khong dung dinh dang." });
     return;
   }
-  if (!password?.trim()) {
-    res.status(400).json({ message: "Mat khau khong duoc trong." });
+
+  const userRepo = AppDataSource.getRepository(User);
+  const existing = await userRepo
+    .createQueryBuilder("user")
+    .where("user.email = :email OR user.phone = :phone", {
+      email: email.trim(),
+      phone: phone?.trim() || "",
+    })
+    .andWhere("user.deletedAt IS NULL")
+    .getOne();
+
+  if (existing) {
+    res.status(400).json({ message: "Email hoac so dien thoai da ton tai." });
+    return;
+  }
+
+  const result = await sendRegisterOtp(email.trim());
+  if (!result.success) {
+    res.status(400).json({ message: result.message });
+    return;
+  }
+
+  // Trả về thông tin để frontend lưu tạm, KHÔNG lưu user vào DB ở bước này
+  res.json({
+    message: result.message,
+    tempData: { fullName: fullName.trim(), email: email.trim(), phone: phone?.trim() || undefined },
+  });
+}
+
+// Bước 2 – Xác minh OTP + tạo tài khoản
+export async function registerStep2(req: Request, res: Response): Promise<void> {
+  const { tempData, otpCode, password, confirmPassword } = req.body;
+
+  if (!tempData?.email || !otpCode?.trim() || !password?.trim() || !confirmPassword?.trim()) {
+    res.status(400).json({ message: "Vui long dien day du thong tin." });
     return;
   }
   if (password.length < 6) {
@@ -92,23 +127,18 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const userRepo = AppDataSource.getRepository(User);
-
-  const existing = await userRepo
-    .createQueryBuilder("user")
-    .where("user.email = :email OR user.phone = :phone", { email: email.trim(), phone: phone?.trim() })
-    .andWhere("user.deletedAt IS NULL")
-    .getOne();
-
-  if (existing) {
-    res.status(400).json({ message: "Email hoac so dien thoai da ton tai." });
+  const verifyResult = await verifyRegisterOtp(tempData.email, otpCode);
+  if (!verifyResult.success) {
+    res.status(400).json({ message: verifyResult.message });
     return;
   }
 
+  // OTP đúng → tạo user
+  const userRepo = AppDataSource.getRepository(User);
   const user = new User();
-  user.fullName = fullName.trim();
-  user.email = email.trim();
-  user.phone = phone?.trim() || undefined;
+  user.fullName = tempData.fullName;
+  user.email = tempData.email;
+  user.phone = tempData.phone || undefined;
   user.role = Role.CUSTOMER;
   user.status = UserStatus.ACTIVE;
   user.passwordHash = await bcryptjs.hash(password, 10);

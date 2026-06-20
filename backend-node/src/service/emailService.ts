@@ -60,6 +60,45 @@ export async function sendWelcomeEmail(to: string, fullName: string): Promise<vo
   await sendEmail(to, "Chào mừng bạn đến với ProFit!", html);
 }
 
+export async function sendOtpEmail(to: string, otpCode: string): Promise<void> {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #111; color: #fff; padding: 32px; border-radius: 12px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="color: #ff5c00; margin: 0; font-size: 36px; letter-spacing: 2px;">
+          Pro<span style="color: #fff;">Fit</span>
+        </h1>
+        <p style="color: #888; margin: 8px 0 0;">Xác minh đăng ký tài khoản</p>
+      </div>
+      <div style="background: #1a1a1a; border-radius: 12px; padding: 28px; border: 1px solid #2a2a2a;">
+        <h2 style="color: #fff; margin: 0 0 16px;">Mã xác minh của bạn</h2>
+        <p style="color: #ccc; line-height: 1.7; margin: 0 0 24px;">
+          Nhập mã bên dưới để hoàn tất đăng ký tài khoản ProFit:
+        </p>
+        <div style="text-align: center; margin: 28px 0;">
+          <div style="display: inline-block; background: rgba(255,92,0,0.1); border: 2px dashed rgba(255,92,0,0.4);
+                      border-radius: 12px; padding: 20px 40px;">
+            <span style="font-family: 'Courier New', monospace; font-size: 40px; font-weight: bold;
+                         color: #ff5c00; letter-spacing: 8px;">${otpCode}</span>
+          </div>
+        </div>
+        <p style="color: #888; font-size: 13px; line-height: 1.7; margin: 0 0 16px;">
+          Mã có hiệu lực trong <strong style="color: #ff5c00;">5 phút</strong>.
+          Không chia sẻ mã này với bất kỳ ai.
+        </p>
+        <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 14px; margin-top: 20px;">
+          <p style="color: #ef4444; font-size: 13px; margin: 0;">
+            <strong>Lưu ý bảo mật:</strong> ProFit không bao giờ hỏi mã OTP qua điện thoại hay tin nhắn.
+          </p>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 24px; color: #555; font-size: 12px;">
+        &copy; 2024 ProFit Shop. All rights reserved.
+      </div>
+    </div>
+  `;
+  await sendEmail(to, "ProFit - Mã xác minh đăng ký tài khoản", html);
+}
+
 export async function sendResetPasswordEmail(to: string, fullName: string, resetLink: string): Promise<void> {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #111; color: #fff; padding: 32px; border-radius: 12px;">

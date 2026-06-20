@@ -19,6 +19,7 @@ import AboutPage         from "./pages/AboutPage";
 import ContactPage       from "./pages/ContactPage";
 import LoginPage         from "./pages/LoginPage";
 import RegisterPage      from "./pages/RegisterPage";
+import VerifyOtpPage    from "./pages/VerifyOtpPage";
 import ProfilePage       from "./pages/ProfilePage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -55,6 +56,8 @@ const App = () => {
       setCurrentPage("login");
     } else if (path === "/register") {
       setCurrentPage("register");
+    } else if (path === "/verify-otp" || path.startsWith("/verify-otp")) {
+      setCurrentPage("verify-otp");
     } else if (path === "/contact") {
       setCurrentPage("contact");
     } else if (path === "/products") {
@@ -400,6 +403,9 @@ const App = () => {
 
       case "register":
         return <RegisterPage onLogin={handleLogin} navigate={navigate} />;
+
+      case "verify-otp":
+        return <VerifyOtpPage navigate={navigate} />;
 
       case "profile":
         return <ProfilePage navigate={navigate} user={user} />;
