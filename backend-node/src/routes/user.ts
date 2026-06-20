@@ -1,12 +1,11 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { User } from "../entity/User";
-import { AuthRequest } from "../middleware/auth";
 
-export async function getProfile(req: AuthRequest, res: Response): Promise<void> {
+export async function getProfile(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ message: "User not found" });
@@ -22,10 +21,10 @@ export async function getProfile(req: AuthRequest, res: Response): Promise<void>
   });
 }
 
-export async function updateProfile(req: AuthRequest, res: Response): Promise<void> {
+export async function updateProfile(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ message: "User not found" });

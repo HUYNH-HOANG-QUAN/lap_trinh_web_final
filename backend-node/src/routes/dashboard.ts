@@ -1,11 +1,10 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { Order } from "../entity/Order";
 import { OrderItem } from "../entity/OrderItem";
-import { AuthRequest } from "../middleware/auth";
 import { In } from "typeorm";
 
-export async function getDashboardStats(req: AuthRequest, res: Response): Promise<void> {
+export async function getDashboardStats(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
 
   const now = new Date();

@@ -1,22 +1,21 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { Review } from "../entity/Review";
 import { Product } from "../entity/Product";
 import { User } from "../entity/User";
-import { AuthRequest } from "../middleware/auth";
 
 function parseId(param: string | undefined): number | null {
   const n = parseInt(param ?? "", 10);
   return isNaN(n) || n <= 0 ? null : n;
 }
 
-export async function createReview(req: AuthRequest, res: Response): Promise<void> {
+export async function createReview(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const productRepo = AppDataSource.getRepository(Product);
   const reviewRepo = AppDataSource.getRepository(Review);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -62,12 +61,12 @@ export async function getProductReviews(req: any, res: Response): Promise<void> 
   res.json(await Promise.all(reviews.map(mapReviewResponse)));
 }
 
-export async function getMyReviews(req: AuthRequest, res: Response): Promise<void> {
+export async function getMyReviews(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const reviewRepo = AppDataSource.getRepository(Review);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -82,12 +81,12 @@ export async function getMyReviews(req: AuthRequest, res: Response): Promise<voi
   res.json(await Promise.all(reviews.map(mapReviewResponse)));
 }
 
-export async function updateReview(req: AuthRequest, res: Response): Promise<void> {
+export async function updateReview(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const reviewRepo = AppDataSource.getRepository(Review);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -114,12 +113,12 @@ export async function updateReview(req: AuthRequest, res: Response): Promise<voi
   res.json(await mapReviewResponse(saved));
 }
 
-export async function deleteReview(req: AuthRequest, res: Response): Promise<void> {
+export async function deleteReview(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const reviewRepo = AppDataSource.getRepository(Review);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });

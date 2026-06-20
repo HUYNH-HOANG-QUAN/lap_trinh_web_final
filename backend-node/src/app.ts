@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
+import passport from "passport";
+import "./config/googleOAuth";
 import { authenticate, requireAdmin } from "./middleware/auth";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
@@ -41,6 +43,8 @@ app.post("/api/v1/auth/register", authRoutes.register);
 app.post("/api/v1/auth/logout", authRoutes.logout);
 app.post("/api/v1/auth/forgot-password", authRoutes.forgotPassword);
 app.post("/api/v1/auth/reset-password", authRoutes.resetPassword);
+app.get("/api/v1/auth/google", authRoutes.googleAuth);
+app.get("/api/v1/auth/google/callback", authRoutes.googleCallback);
 
 // ============================================
 // Public product/category routes

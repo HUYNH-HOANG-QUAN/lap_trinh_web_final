@@ -9,14 +9,9 @@ export interface JwtPayload {
   role: string;
 }
 
-export interface AuthRequest extends Request {
-  user?: {
-    email: string;
-    role: string;
-  };
-}
+export type AuthRequest = Request;
 
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
+export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const token = extractToken(req);
   if (!token) {
     res.status(401).json({ error: "Unauthorized", message: "Vui long dang nhap" });
@@ -25,27 +20,28 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 
   try {
     const payload = jwt.verify(token, config.jwt.secret) as JwtPayload;
-    req.user = { email: payload.email, role: payload.role };
+    (req as any).user = { email: payload.email, role: payload.role };
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized", message: "Token khong hop le" });
   }
 }
 
-export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): void {
-  if (!req.user || req.user.role !== "ROLE_ADMIN") {
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  const user = (req as any).user as JwtPayload | undefined;
+  if (!user || user.role !== "ROLE_ADMIN") {
     res.status(403).json({ error: "Forbidden", message: "Yeu cau quyen Admin" });
     return;
   }
   next();
 }
 
-export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+export function optionalAuth(req: Request, res: Response, next: NextFunction): void {
   const token = extractToken(req);
   if (token) {
     try {
       const payload = jwt.verify(token, config.jwt.secret) as JwtPayload;
-      req.user = { email: payload.email, role: payload.role };
+      (req as any).user = { email: payload.email, role: payload.role };
     } catch {
       // ignore invalid token for optional auth
     }
@@ -63,12 +59,13 @@ function extractToken(req: Request): string | undefined {
   return undefined;
 }
 
-export async function loadUserFromRequest(req: AuthRequest): Promise<User | null> {
-  if (!req.user) return null;
+export async function loadUserFromRequest(req: Request): Promise<User | null> {
+  const user = (req as any).user as JwtPayload | undefined;
+  if (!user) return null;
   return AppDataSource.getRepository(User)
     .createQueryBuilder("user")
     .where("user.email = :email")
     .andWhere("user.deletedAt IS NULL")
-    .setParameter("email", req.user.email)
+    .setParameter("email", user.email)
     .getOne();
 }

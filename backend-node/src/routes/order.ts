@@ -1,10 +1,9 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { Order } from "../entity/Order";
 import { OrderItem } from "../entity/OrderItem";
 import { Product } from "../entity/Product";
 import { User } from "../entity/User";
-import { AuthRequest } from "../middleware/auth";
 import { generateOrderCode } from "../utils/orderCode";
 
 function parseId(param: string | undefined): number | null {
@@ -12,7 +11,7 @@ function parseId(param: string | undefined): number | null {
   return isNaN(n) || n <= 0 ? null : n;
 }
 
-export async function getMyOrders(req: AuthRequest, res: Response): Promise<void> {
+export async function getMyOrders(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
@@ -21,7 +20,7 @@ export async function getMyOrders(req: AuthRequest, res: Response): Promise<void
     .leftJoinAndSelect("o.user", "u")
     .leftJoinAndSelect("o.items", "i")
     .leftJoinAndSelect("i.product", "p")
-    .where("u.email = :email", { email: req.user!.email })
+    .where("u.email = :email", { email: (req as any).user?.email })
     .orderBy("o.createdAt", "DESC")
     .skip(page * size)
     .take(size)
@@ -37,13 +36,13 @@ export async function getMyOrders(req: AuthRequest, res: Response): Promise<void
   });
 }
 
-export async function createOrder(req: AuthRequest, res: Response): Promise<void> {
+export async function createOrder(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const orderRepo = AppDataSource.getRepository(Order);
   const productRepo = AppDataSource.getRepository(Product);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -93,7 +92,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<void
   res.status(201).json(mapOrderResponse(saved));
 }
 
-export async function createGuestOrder(req: AuthRequest, res: Response): Promise<void> {
+export async function createGuestOrder(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const productRepo = AppDataSource.getRepository(Product);
 
@@ -139,7 +138,7 @@ export async function createGuestOrder(req: AuthRequest, res: Response): Promise
   res.status(201).json(mapOrderResponse(saved));
 }
 
-export async function updateOrderStatus(req: AuthRequest, res: Response): Promise<void> {
+export async function updateOrderStatus(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const productRepo = AppDataSource.getRepository(Product);
 
@@ -191,7 +190,7 @@ export async function updateOrderStatus(req: AuthRequest, res: Response): Promis
   res.json(mapOrderResponse(order));
 }
 
-export async function confirmPayment(req: AuthRequest, res: Response): Promise<void> {
+export async function confirmPayment(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const productRepo = AppDataSource.getRepository(Product);
 
@@ -227,7 +226,7 @@ export async function confirmPayment(req: AuthRequest, res: Response): Promise<v
   res.json(mapOrderResponse(order));
 }
 
-export async function confirmBankingPayment(req: AuthRequest, res: Response): Promise<void> {
+export async function confirmBankingPayment(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const orderId = parseId(req.params.orderId);
   if (!orderId) { res.status(400).json({ error: "Invalid order ID" }); return; }
@@ -253,7 +252,7 @@ export async function confirmBankingPayment(req: AuthRequest, res: Response): Pr
   res.json(mapOrderResponse(order));
 }
 
-export async function getPendingConfirmCount(req: AuthRequest, res: Response): Promise<void> {
+export async function getPendingConfirmCount(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const count = await orderRepo.count({ where: { paymentStatus: "PENDING_CONFIRM" } });
   res.json({ count });

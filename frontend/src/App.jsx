@@ -22,6 +22,7 @@ import RegisterPage      from "./pages/RegisterPage";
 import ProfilePage       from "./pages/ProfilePage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import GoogleCallback from "./pages/GoogleCallback";
 
 import DashboardPage     from "./pages/admin/DashboardPage";
 import ProductManagePage from "./pages/admin/ProductManagePage";
@@ -48,6 +49,8 @@ const App = () => {
       setCurrentPage("payment-result");
     } else if (path === "/reset-password" || path.startsWith("/reset-password")) {
       setCurrentPage("reset-password");
+    } else if (path === "/auth/google/callback" || path.startsWith("/auth/google/callback")) {
+      setCurrentPage("google-callback");
     } else if (path === "/login") {
       setCurrentPage("login");
     } else if (path === "/register") {
@@ -406,6 +409,9 @@ const App = () => {
 
       case "reset-password":
         return <ResetPasswordPage showToast={showToast} />;
+
+      case "google-callback":
+        return <GoogleCallback onLogin={handleLogin} navigate={navigate} />;
 
       // ── Admin (guard quyền) ───────────────────────
       case "admin-dashboard":

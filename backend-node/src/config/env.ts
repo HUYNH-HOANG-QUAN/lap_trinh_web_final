@@ -27,4 +27,19 @@ export const config = {
   },
 
   frontendBaseUrl: process.env.FRONTEND_BASE_URL || "http://localhost:5173",
+
+  email: {
+    smtp: {
+      user: process.env.EMAIL_SMTP_USER || "",
+      password: process.env.EMAIL_SMTP_PASSWORD || "",
+    },
+  },
+
+  googleOAuth: {
+    clientID: process.env.GOOGLE_CLIENT_ID || "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    callbackURL:
+      process.env.GOOGLE_CALLBACK_URL ||
+      `${process.env.FRONTEND_BASE_URL || "http://localhost:5173"}/api/v1/auth/google/callback`,
+  },
 };

@@ -1,20 +1,19 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { Message } from "../entity/Message";
 import { User } from "../entity/User";
-import { AuthRequest } from "../middleware/auth";
 
 function parseId(param: string | undefined): number | null {
   const n = parseInt(param ?? "", 10);
   return isNaN(n) || n <= 0 ? null : n;
 }
 
-export async function getMyMessages(req: AuthRequest, res: Response): Promise<void> {
+export async function getMyMessages(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const messageRepo = AppDataSource.getRepository(Message);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -28,12 +27,12 @@ export async function getMyMessages(req: AuthRequest, res: Response): Promise<vo
   res.json(messages.map(mapMessageResponse));
 }
 
-export async function sendMessage(req: AuthRequest, res: Response): Promise<void> {
+export async function sendMessage(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const messageRepo = AppDataSource.getRepository(Message);
 
   const user = await userRepo.findOne({
-    where: { email: req.user!.email, deletedAt: null as any },
+    where: { email: (req as any).user?.email, deletedAt: null as any },
   });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -56,7 +55,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
   res.status(201).json(mapMessageResponse(saved));
 }
 
-export async function getAllMessages(req: AuthRequest, res: Response): Promise<void> {
+export async function getAllMessages(req: Request, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
   const messages = await messageRepo
     .createQueryBuilder("m")
@@ -67,7 +66,7 @@ export async function getAllMessages(req: AuthRequest, res: Response): Promise<v
   res.json(messages.map(mapMessageResponse));
 }
 
-export async function getMessage(req: AuthRequest, res: Response): Promise<void> {
+export async function getMessage(req: Request, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
@@ -82,7 +81,7 @@ export async function getMessage(req: AuthRequest, res: Response): Promise<void>
   res.json(mapMessageResponse(message));
 }
 
-export async function replyMessage(req: AuthRequest, res: Response): Promise<void> {
+export async function replyMessage(req: Request, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
@@ -101,7 +100,7 @@ export async function replyMessage(req: AuthRequest, res: Response): Promise<voi
   res.json(mapMessageResponse(saved));
 }
 
-export async function markAsRead(req: AuthRequest, res: Response): Promise<void> {
+export async function markAsRead(req: Request, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid message ID" }); return; }
@@ -115,7 +114,7 @@ export async function markAsRead(req: AuthRequest, res: Response): Promise<void>
   res.json({ message: "OK" });
 }
 
-export async function getUnreadCount(req: AuthRequest, res: Response): Promise<void> {
+export async function getUnreadCount(req: Request, res: Response): Promise<void> {
   const messageRepo = AppDataSource.getRepository(Message);
   const count = await messageRepo.count({ where: { status: "UNREAD" } });
   res.json({ count });

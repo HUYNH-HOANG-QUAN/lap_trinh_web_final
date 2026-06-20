@@ -1,11 +1,10 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../config/database";
 import { User } from "../entity/User";
 import { Category } from "../entity/Category";
 import { Product } from "../entity/Product";
 import { Order } from "../entity/Order";
 import { OrderItem } from "../entity/OrderItem";
-import { AuthRequest } from "../middleware/auth";
 import bcryptjs from "bcryptjs";
 
 /** Parse param thành số nguyên, trả về null nếu không hợp lệ */
@@ -15,7 +14,7 @@ function parseId(param: string | undefined): number | null {
 }
 
 // Users
-export async function getAllUsers(req: AuthRequest, res: Response): Promise<void> {
+export async function getAllUsers(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
@@ -44,7 +43,7 @@ export async function getAllUsers(req: AuthRequest, res: Response): Promise<void
   });
 }
 
-export async function createUser(req: AuthRequest, res: Response): Promise<void> {
+export async function createUser(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const { fullName, email, phone, role, status, passwordHash } = req.body;
 
@@ -74,7 +73,7 @@ export async function createUser(req: AuthRequest, res: Response): Promise<void>
   });
 }
 
-export async function updateUser(req: AuthRequest, res: Response): Promise<void> {
+export async function updateUser(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid user ID" }); return; }
@@ -103,7 +102,7 @@ export async function updateUser(req: AuthRequest, res: Response): Promise<void>
   });
 }
 
-export async function deleteUser(req: AuthRequest, res: Response): Promise<void> {
+export async function deleteUser(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid user ID" }); return; }
@@ -118,7 +117,7 @@ export async function deleteUser(req: AuthRequest, res: Response): Promise<void>
 }
 
 // Categories
-export async function getAllCategoriesAdmin(req: AuthRequest, res: Response): Promise<void> {
+export async function getAllCategoriesAdmin(req: Request, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
@@ -146,7 +145,7 @@ export async function getAllCategoriesAdmin(req: AuthRequest, res: Response): Pr
   });
 }
 
-export async function createCategory(req: AuthRequest, res: Response): Promise<void> {
+export async function createCategory(req: Request, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
   const { name, slug, parentId, isActive } = req.body;
 
@@ -167,7 +166,7 @@ export async function createCategory(req: AuthRequest, res: Response): Promise<v
   });
 }
 
-export async function updateCategory(req: AuthRequest, res: Response): Promise<void> {
+export async function updateCategory(req: Request, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid category ID" }); return; }
@@ -194,7 +193,7 @@ export async function updateCategory(req: AuthRequest, res: Response): Promise<v
   });
 }
 
-export async function deleteCategory(req: AuthRequest, res: Response): Promise<void> {
+export async function deleteCategory(req: Request, res: Response): Promise<void> {
   const categoryRepo = AppDataSource.getRepository(Category);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid category ID" }); return; }
@@ -210,7 +209,7 @@ export async function deleteCategory(req: AuthRequest, res: Response): Promise<v
 }
 
 // Products
-export async function getAllProductsAdmin(req: AuthRequest, res: Response): Promise<void> {
+export async function getAllProductsAdmin(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
@@ -248,7 +247,7 @@ export async function getAllProductsAdmin(req: AuthRequest, res: Response): Prom
   });
 }
 
-export async function createProduct(req: AuthRequest, res: Response): Promise<void> {
+export async function createProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
   const { sku, slug, name, shortDescription, description, price, oldPrice, stockQuantity, categoryId, isActive } = req.body;
 
@@ -270,7 +269,7 @@ export async function createProduct(req: AuthRequest, res: Response): Promise<vo
   res.status(201).json({ id: saved.id, name: saved.name, sku: saved.sku });
 }
 
-export async function updateProduct(req: AuthRequest, res: Response): Promise<void> {
+export async function updateProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
@@ -296,7 +295,7 @@ export async function updateProduct(req: AuthRequest, res: Response): Promise<vo
   res.json({ id: saved.id, name: saved.name });
 }
 
-export async function deleteProduct(req: AuthRequest, res: Response): Promise<void> {
+export async function deleteProduct(req: Request, res: Response): Promise<void> {
   const productRepo = AppDataSource.getRepository(Product);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ message: "Invalid product ID" }); return; }
@@ -312,7 +311,7 @@ export async function deleteProduct(req: AuthRequest, res: Response): Promise<vo
 }
 
 // Orders
-export async function getAllOrdersAdmin(req: AuthRequest, res: Response): Promise<void> {
+export async function getAllOrdersAdmin(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
@@ -364,7 +363,7 @@ export async function getAllOrdersAdmin(req: AuthRequest, res: Response): Promis
   });
 }
 
-export async function getOrderByIdAdmin(req: AuthRequest, res: Response): Promise<void> {
+export async function getOrderByIdAdmin(req: Request, res: Response): Promise<void> {
   const orderRepo = AppDataSource.getRepository(Order);
   const id = parseId(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid order ID" }); return; }

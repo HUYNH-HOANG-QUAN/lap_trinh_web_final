@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import passport from "passport";
 import { AppDataSource } from "../config/database";
 import { User, Role, UserStatus } from "../entity/User";
-import { AuthRequest } from "../middleware/auth";
 import { config } from "../config/env";
+import { sendWelcomeEmail, sendResetPasswordEmail } from "../service/emailService";
 
 export async function login(req: Request, res: Response): Promise<void> {
   const { username, password, rememberMe } = req.body;
@@ -113,6 +114,11 @@ export async function register(req: Request, res: Response): Promise<void> {
   user.passwordHash = await bcryptjs.hash(password, 10);
 
   await userRepo.save(user);
+
+  sendWelcomeEmail(user.email, user.fullName).catch((err) =>
+    console.error("[Email] Failed to send welcome email:", err.message)
+  );
+
   res.json({ message: "Dang ky thanh cong." });
 }
 
@@ -139,7 +145,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   const user = await userRepo.findOne({ where: { email: email.trim() } });
 
   if (!user) {
-    res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau.", demo: true });
+    res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau." });
     return;
   }
 
@@ -148,12 +154,18 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
   await userRepo.save(user);
 
-  // Lấy origin từ request để biết frontend đang chạy ở đâu (Vercel hay localhost)
   const clientOrigin = req.headers.origin || config.frontendBaseUrl;
   const resetLink = `${clientOrigin}/reset-password?token=${user.resetToken}`;
-  console.log(`[Auth] Reset link for ${email}: ${resetLink}`);
 
-  res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau.", demo: true, resetLink });
+  if (config.email.smtp.user && config.email.smtp.password) {
+    sendResetPasswordEmail(user.email, user.fullName || user.email.split("@")[0], resetLink)
+      .then(() => console.log(`[Email] Reset email sent to ${user.email}`))
+      .catch((err) => console.error("[Email] Failed to send reset email:", err.message));
+  } else {
+    console.log(`[Auth] Reset link for ${email}: ${resetLink}`);
+  }
+
+  res.json({ message: "Neu email ton tai trong he thong, ban se nhan duoc lien ket dat lai mat khau." });
 }
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
@@ -182,4 +194,37 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   await userRepo.save(user);
 
   res.json({ message: "Dat lai mat khau thanh cong!" });
+}
+
+export async function googleAuth(req: Request, res: Response): Promise<void> {
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  } as any)(req, res);
+}
+
+export async function googleCallback(req: Request, res: Response): Promise<void> {
+  passport.authenticate("google", { session: false }, (err: any, user: any) => {
+    if (err || !user) {
+      const errorUrl = `${config.frontendBaseUrl}?google_error=${encodeURIComponent(err?.message || "Authentication failed")}`;
+      return res.redirect(errorUrl);
+    }
+
+    const token = jwt.sign(
+      { email: user.email, role: `ROLE_${user.role}` },
+      config.jwt.secret,
+      { expiresIn: Math.floor(config.jwt.expirationMs / 1000) }
+    );
+
+    res.cookie(config.jwt.cookieName, token, {
+      httpOnly: true,
+      secure: config.nodeEnv === "production",
+      sameSite: "lax" as const,
+      maxAge: Math.floor(config.jwt.expirationMs / 1000) * 1000,
+      path: "/",
+    });
+
+    const successUrl = `${config.frontendBaseUrl}/auth/google/callback?token=${token}&email=${encodeURIComponent(user.email)}&fullName=${encodeURIComponent(user.fullName || "")}&role=${encodeURIComponent(user.role)}`;
+    res.redirect(successUrl);
+  })(req, res);
 }
