@@ -29,7 +29,6 @@ import DashboardPage     from "./pages/admin/DashboardPage";
 import ProductManagePage from "./pages/admin/ProductManagePage";
 import OrderManagePage   from "./pages/admin/OrderManagePage";
 import UserManagePage    from "./pages/admin/UserManagePage";
-import ContactInboxPage  from "./pages/admin/ContactInboxPage";
 
 import "./styles/global.css";
 import { transformOrderFromBE } from "./utils/orderHelpers";
@@ -435,10 +434,6 @@ const App = () => {
       case "admin-users":
         if (!user || user.role !== "admin") { navigate("login"); return null; }
         return <UserManagePage showToast={showToast} navigate={navigate} />;
-
-      case "admin-contact":
-        if (!user || user.role !== "admin") { navigate("login"); return null; }
-        return <ContactInboxPage showToast={showToast} />;
 
       default:
         return <HomePage navigate={navigate} onAddToCart={handleAddToCart} onViewDetail={handleViewDetail} />;

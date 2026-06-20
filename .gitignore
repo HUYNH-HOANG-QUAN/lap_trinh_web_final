@@ -21,9 +21,13 @@ yarn-error.log*
 # 3. Môi trường và cấu hình cá nhân (RẤT QUAN TRỌNG - Tránh lộ API Key, Password)
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+.env.render
 application-local.yml
 application-local.yaml
 application-local.properties

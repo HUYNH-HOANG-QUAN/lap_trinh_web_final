@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://YOUR-BACKEND-URL.up.railway.app/api/$1"
+      "destination": "https://protech-backend-1qu3.onrender.com/api/$1"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "https://YOUR-BACKEND-URL.up.railway.app/uploads/$1"
+      "destination": "https://protech-backend-1qu3.onrender.com/uploads/$1"
     },
     {
       "source": "/static/(.*)",
-      "destination": "https://YOUR-BACKEND-URL.up.railway.app/static/$1"
+      "destination": "https://protech-backend-1qu3.onrender.com/static/$1"
     },
     {
       "source": "/(.*)",

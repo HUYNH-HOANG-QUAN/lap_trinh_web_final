@@ -36,9 +36,13 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/views ./views
 COPY --from=builder /app/static ./static
+# Copy SQL init scripts + entrypoint
+COPY sql-init.sql ./sql-init.sql
+COPY sql-scripts ./sql-scripts
+COPY entrypoint.sh ./entrypoint.sh
 
 # Thư mục uploads sẽ được mount từ host (nếu cần)
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads && chmod +x entrypoint.sh
 
 EXPOSE 3001
 
@@ -46,4 +50,4 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/v1/products || exit 1
 
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["sh", "-c", "node /app/sql-scripts/init-db.js && exec node /app/dist/index.js"]

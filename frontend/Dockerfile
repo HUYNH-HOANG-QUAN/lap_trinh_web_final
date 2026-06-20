@@ -11,18 +11,25 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Biến môi trường Vite sẽ được truyền từ docker-compose khi build
-# Dùng cho deploy trên cùng Docker network (docker-compose up)
+# VITE_API_BASE_URL: URL mà frontend sẽ gọi.
+# - Khi chạy trong docker-compose: truyền /api/v1 (relative) để nginx proxy tới backend container.
+# - Khi build độc lập (deploy riêng trên Render): truyền BACKEND_URL=https://protech-backend-1qu3.onrender.com
+#   bằng cách set BUILD_STANDALONE=1 và đặt BACKEND_URL.
 ARG VITE_API_BASE_URL=/api/v1
+ARG BACKEND_URL=
+ARG BUILD_STANDALONE=0
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-
-# Dùng cho deploy riêng trên Render (truyền khi build)
-ARG BACKEND_URL=https://protech-backend-1qu3.onrender.com
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-${BACKEND_URL}}/api/v1
-
-# Copy source và build
+# Copy source trước khi build
 COPY . .
-RUN npm run build
+# Nếu build độc lập ngoài compose, dùng BACKEND_URL thay vì relative path
+RUN if [ "${BUILD_STANDALONE}" = "1" ] && [ -n "${BACKEND_URL}" ]; then \
+      echo "Building standalone with BACKEND_URL=${BACKEND_URL}"; \
+      export VITE_API_BASE_URL="${BACKEND_URL}/api/v1"; \
+      npm run build; \
+    else \
+      echo "Building for docker-compose with VITE_API_BASE_URL=${VITE_API_BASE_URL}"; \
+      npm run build; \
+    fi
 
 ############################
 # Stage 2: Nginx runtime

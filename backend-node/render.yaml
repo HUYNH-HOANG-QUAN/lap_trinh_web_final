@@ -22,9 +22,9 @@ services:
       - key: DB_PASSWORD
         value: AVNS_D4vT1i6szaD8AP_qQr0
       - key: CORS_ORIGIN
-        value: https://protech-frontend.onrender.com
+        value: https://protech-two-gamma.vercel.app
       - key: FRONTEND_BASE_URL
-        value: https://protech-frontend.onrender.com
+        value: https://protech-two-gamma.vercel.app
       - key: JWT_SECRET
         value: ProFitJwtSecretKeyMustBeAtLeastSixtyFourCharactersLongForHS512
       - key: JWT_EXPIRATION_MS
@@ -60,4 +60,4 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         value: 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
       - key: GOOGLE_CALLBACK_URL
-        value: https://protech-frontend.onrender.com/api/v1/auth/google/callback
+        value: https://protech-two-gamma.vercel.app/api/v1/auth/google/callback

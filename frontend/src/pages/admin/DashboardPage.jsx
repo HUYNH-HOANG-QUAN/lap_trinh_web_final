@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { CircleDollarSign, Calendar1, CalendarDays, TrendingUp,
   Package, Check, Hourglass, ChartColumn, 
-  ShoppingCart, Users, MessageCircle, Tag } from "lucide-react";
+  ShoppingCart, Users, Tag } from "lucide-react";
 import { adminService } from "../../services/adminService";
 
 const formatPrice = (price) => {
@@ -76,7 +76,6 @@ const DashboardPage = ({ navigate }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("day"); // day | month | year
   const [pendingConfirmCount, setPendingConfirmCount] = useState(0);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,12 +85,7 @@ const DashboardPage = ({ navigate }) => {
           console.error("Lỗi tải orders:", err);
           return { content: [] };
         });
-        
-        const notifData = await adminService.getUnreadCount().catch(err => {
-          console.error("Lỗi tải unread count:", err);
-          return { count: 0 };
-        });
-        
+
         const ordersData = ordersPaginatedData.content ? ordersPaginatedData.content : (Array.isArray(ordersPaginatedData) ? ordersPaginatedData : []);
         setOrders(ordersData);
 
@@ -213,7 +207,6 @@ const DashboardPage = ({ navigate }) => {
 
         const pending = ordersData.filter(o => o.paymentStatus === "PENDING_CONFIRM").length;
         setPendingConfirmCount(pending);
-        setUnreadMessageCount(notifData.count || 0);
       } catch (error) {
         console.error("Lỗi tải dữ liệu dashboard:", error);
       } finally {
@@ -264,30 +257,6 @@ const DashboardPage = ({ navigate }) => {
   return (
     <div className="section">
       {/* Alert Banners */}
-      {unreadMessageCount > 0 && (
-        <div style={{
-          background: "rgba(255, 92, 0, 0.1)",
-          border: "1px solid rgba(255, 92, 0, 0.3)",
-          borderRadius: 12, padding: "14px 20px", marginBottom: 16,
-          display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer",
-        }}
-          onClick={() => navigate("admin-contact")}
-          onMouseEnter={e => e.currentTarget.style.borderColor = "var(--primary)"}
-          onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255, 92, 0, 0.3)"}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 26 }}><MessageCircle></MessageCircle></span>
-            <div>
-              <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: 15 }}>Tin nhắn liên hệ mới</div>
-              <div style={{ fontSize: 13, color: "var(--gray)", marginTop: 2 }}>
-                Có <strong style={{ color: "var(--primary)" }}>{unreadMessageCount}</strong> tin nhắn chưa xem
-              </div>
-            </div>
-          </div>
-          <span style={{ color: "var(--primary)", fontWeight: 700, fontSize: 14 }}>Xem ngay →</span>
-        </div>
-      )}
-
       {pendingConfirmCount > 0 && (
         <div style={{
           background: "rgba(59, 130, 246, 0.1)",
@@ -560,7 +529,6 @@ const DashboardPage = ({ navigate }) => {
               { icon: <Package />, label: "Quản lý sản phẩm", page: "admin-products", desc: "CRUD sản phẩm" },
               { icon: <ShoppingCart />, label: "Quản lý đơn hàng", page: "admin-orders", desc: "Xử lý đơn hàng" },
               { icon: <Users />, label: "Quản lý User", page: "admin-users", desc: "Người dùng" },
-              { icon: <MessageCircle />, label: "Hộp thư liên hệ", page: "admin-contact", desc: "Tin nhắn", badge: unreadMessageCount },
             ].map(item => (
               <div key={item.label} onClick={() => navigate(item.page)}
                 style={{

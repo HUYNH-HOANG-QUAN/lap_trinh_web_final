@@ -32,6 +32,7 @@ services:
         # Khi chạy qua nginx reverse proxy, frontend gọi /api/v1 (relative)
         # Nếu muốn frontend gọi trực tiếp backend, đổi thành http://localhost:3001/api/v1
         VITE_API_BASE_URL: /api/v1
+        BUILD_STANDALONE: "0"
     image: profit-frontend:latest
     container_name: profit-frontend
     restart: unless-stopped

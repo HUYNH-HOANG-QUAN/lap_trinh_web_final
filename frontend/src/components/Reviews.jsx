@@ -2,7 +2,7 @@
 // Props: productId, user
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
+import { MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
 import { apiGetProductReviews, apiCreateReview, isLoggedIn } from "../utils/api";
 
 const Reviews = ({ productId, user, onReviewAdded }) => {
@@ -182,14 +182,6 @@ const Reviews = ({ productId, user, onReviewAdded }) => {
           <h4 style={{ marginTop: 0, marginBottom: 16, color: "var(--white)" }}>
             Đánh giá của bạn
           </h4>
-
-          {/* Rating */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", marginBottom: 8, color: "var(--gray)" }}>
-              Đánh giá:
-            </label>
-            {renderStars(rating, true, setRating)}
-          </div>
 
           {/* Comment */}
           <div style={{ marginBottom: 16 }}>
