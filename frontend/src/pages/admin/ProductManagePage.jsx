@@ -33,6 +33,7 @@ const ProductManagePage = ({ showToast }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activePriceRange, setActivePriceRange] = useState(PRICE_RANGES[0]);
+  const [activeCategoryId, setActiveCategoryId] = useState("");
   const [pagination, setPagination] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
 
   const [showModal, setShowModal] = useState(false);
@@ -52,6 +53,7 @@ const ProductManagePage = ({ showToast }) => {
           keyword: search.trim() || undefined,
           minPrice: activePriceRange.min === "" ? undefined : activePriceRange.min,
           maxPrice: activePriceRange.max === "" ? undefined : activePriceRange.max,
+          categoryId: activeCategoryId || undefined,
         }),
         adminService.getAllCategories()
       ]);
@@ -74,11 +76,11 @@ const ProductManagePage = ({ showToast }) => {
     }
   };
 
-  // Gọi lại khi filter (search, price range) thay đổi - reset về page 0
+  // Gọi lại khi filter (search, price range, category) thay đổi - reset về page 0
   useEffect(() => {
     fetchData(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activePriceRange]);
+  }, [search, activePriceRange, activeCategoryId]);
 
   const openAdd = () => {
     setEditProductId(null);
@@ -242,6 +244,55 @@ const ProductManagePage = ({ showToast }) => {
             {range.label}
           </button>
         ))}
+      </div>
+
+      {/* Bộ lọc danh mục */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
+        <span style={{ color: "var(--gray)", fontSize: 13, alignSelf: "center", marginRight: 4 }}>📂 Danh mục:</span>
+        <select
+          value={activeCategoryId}
+          onChange={e => setActiveCategoryId(e.target.value)}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 999,
+            border: "1px solid #333",
+            background: "var(--dark3)",
+            color: activeCategoryId ? "var(--primary)" : "var(--gray)",
+            fontFamily: "Inter, sans-serif",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            outline: "none",
+            minWidth: 180,
+          }}
+        >
+          <option value="">Tất cả danh mục</option>
+          {categories.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        {(activeCategoryId || search || activePriceRange.id !== "all") && (
+          <button
+            onClick={() => {
+              setActiveCategoryId("");
+              setSearch("");
+              setActivePriceRange(PRICE_RANGES[0]);
+            }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #ef4444",
+              background: "rgba(239,68,68,0.1)",
+              color: "#ef4444",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            ✕ Xóa lọc
+          </button>
+        )}
       </div>
 
       <div style={{ background: "var(--card-bg)", borderRadius: 16, border: "1px solid #2a2a2a", overflow: "hidden" }}>

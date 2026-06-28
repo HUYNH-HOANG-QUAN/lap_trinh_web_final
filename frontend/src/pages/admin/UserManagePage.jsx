@@ -4,6 +4,8 @@ import { adminService } from "../../services/adminService";
 const UserManagePage = ({ showToast, navigate }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [pagination, setPagination] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
 
   // States cho Form Thêm/Sửa User
@@ -19,7 +21,10 @@ const UserManagePage = ({ showToast, navigate }) => {
   const fetchUsers = async (page = 0) => {
     try {
       setLoading(true);
-      const data = await adminService.getAllUsers(page, pagination.size);
+      const data = await adminService.getAllUsers(page, pagination.size, {
+        keyword: search.trim() || undefined,
+        status: filterStatus || undefined,
+      });
       // Handle both array and paginated response
       if (data.content) {
         setUsers(data.content);
@@ -41,7 +46,8 @@ const UserManagePage = ({ showToast, navigate }) => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, filterStatus]);
 
   // Handle thay đổi input
   const handleInputChange = (e) => {
@@ -137,6 +143,62 @@ const UserManagePage = ({ showToast, navigate }) => {
             + Thêm User
           </button>
         </div>
+      </div>
+
+      {/* Bộ lọc + Tìm kiếm */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
+        <div className="search-wrap" style={{ flex: 1, minWidth: 240 }}>
+          <span>🔍</span>
+          <input
+            className="search-input"
+            placeholder="Tìm theo tên, email, SĐT..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+          style={{
+            padding: "10px 14px",
+            borderRadius: 12,
+            border: "1px solid #333",
+            background: "var(--dark3)",
+            color: filterStatus ? "var(--primary)" : "var(--gray)",
+            fontFamily: "Inter, sans-serif",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            outline: "none",
+            minWidth: 150,
+          }}
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+          <option value="LOCKED">LOCKED</option>
+        </select>
+        {(search || filterStatus) && (
+          <button
+            onClick={() => { setSearch(""); setFilterStatus(""); }}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 12,
+              border: "1px solid #ef4444",
+              background: "rgba(239,68,68,0.1)",
+              color: "#ef4444",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            ✕ Xóa lọc
+          </button>
+        )}
+        <span style={{ color: "var(--gray)", fontSize: 14, alignSelf: "center" }}>
+          {pagination.totalElements || users.length} người dùng
+        </span>
       </div>
 
       {/* Bảng dữ liệu */}

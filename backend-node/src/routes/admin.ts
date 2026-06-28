@@ -22,9 +22,22 @@ export async function getAllUsers(req: Request, res: Response): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const page = parseInt(req.query.page as string) || 0;
   const size = parseInt(req.query.size as string) || 10;
-  const [users, totalElements] = await userRepo
-    .createQueryBuilder("user")
-    .where("user.deletedAt IS NULL")
+  const keyword = (req.query.keyword as string | undefined)?.trim();
+  const status = req.query.status as string | undefined;
+
+  const qb = userRepo.createQueryBuilder("user").where("user.deletedAt IS NULL");
+
+  if (keyword) {
+    qb.andWhere(
+      "(LOWER(user.fullName) LIKE LOWER(:kw) OR LOWER(user.email) LIKE LOWER(:kw) OR user.phone LIKE :kw)",
+      { kw: `%${keyword}%` }
+    );
+  }
+  if (status) {
+    qb.andWhere("user.status = :status", { status });
+  }
+
+  const [users, totalElements] = await qb
     .orderBy("user.createdAt", "DESC")
     .skip(page * size)
     .take(size)
@@ -221,6 +234,7 @@ export async function getAllProductsAdmin(req: Request, res: Response): Promise<
   const keyword = (req.query.keyword as string | undefined)?.trim();
   const minPrice = req.query.minPrice !== undefined ? Number(req.query.minPrice) : undefined;
   const maxPrice = req.query.maxPrice !== undefined ? Number(req.query.maxPrice) : undefined;
+  const categoryId = req.query.categoryId !== undefined ? parseInt(req.query.categoryId as string) : undefined;
 
   const qb = productRepo
     .createQueryBuilder("p")
@@ -235,6 +249,9 @@ export async function getAllProductsAdmin(req: Request, res: Response): Promise<
   }
   if (maxPrice !== undefined && !isNaN(maxPrice)) {
     qb.andWhere("p.price <= :maxPrice", { maxPrice });
+  }
+  if (categoryId !== undefined && !isNaN(categoryId)) {
+    qb.andWhere("p.categoryId = :categoryId", { categoryId });
   }
 
   const [products, totalElements] = await qb

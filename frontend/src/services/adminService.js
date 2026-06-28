@@ -11,10 +11,16 @@ export const adminService = {
     /**
      * Lấy danh sách tất cả người dùng
      * GET /admin/user/all
+     * filters: { keyword?, status? }
      */
-    getAllUsers: async (page = 0, size = 10) => {
+    getAllUsers: async (page = 0, size = 10, filters = {}) => {
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("size", String(size));
+        if (filters.keyword) params.set("keyword", filters.keyword);
+        if (filters.status) params.set("status", filters.status);
         try {
-            const response = await fetch(`${ADMIN_API_URL}/user/all?page=${page}&size=${size}`, {
+            const response = await fetch(`${ADMIN_API_URL}/user/all?${params.toString()}`, {
                 method: 'GET',
                 headers: getDefaultHeaders(),
             });
@@ -129,7 +135,7 @@ export const adminService = {
     // PRODUCT APIs
     // ==========================================
     getAllProducts: async (page = 0, size = 10, filters = {}) => {
-        // filters: { keyword?, minPrice?, maxPrice? }
+        // filters: { keyword?, minPrice?, maxPrice?, categoryId? }
         const params = new URLSearchParams();
         params.set("page", String(page));
         params.set("size", String(size));
@@ -139,6 +145,9 @@ export const adminService = {
         }
         if (filters.maxPrice !== undefined && filters.maxPrice !== null && filters.maxPrice !== "") {
             params.set("maxPrice", String(filters.maxPrice));
+        }
+        if (filters.categoryId !== undefined && filters.categoryId !== null && filters.categoryId !== "") {
+            params.set("categoryId", String(filters.categoryId));
         }
         const res = await fetch(`${ADMIN_API_URL}/product/all?${params.toString()}`, { headers: getDefaultHeaders() });
         if (!res.ok) throw new Error('Failed to fetch products');
